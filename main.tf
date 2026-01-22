@@ -45,9 +45,3 @@ resource "aws_lb_target_group_attachment" "app_attachment" {
   target_id        = module.ec2[each.key].instance_id
   port             = each.key == "jenkins-terraform" ? 8080 : 80
 }
-
-# module "jump-server" {
-#   source = "./modules/jump-host"
-#   vpc_id            = module.vpc.vpc_id
-#   public_subnet_id = module.vpc.public_subnet_ids
-# }
