@@ -8,7 +8,7 @@ resource "aws_instance" "instances" {
   # Connect the Jenkins script here
 #   user_data = file("${path.module}/install_jenkins.sh")
 
-  key_name = aws_key_pair.jenkins_key_pair.key_name
+  key_name = aws_key_pair.key_pair.key_name
 
 #   iam_instance_profile = aws_iam_instance_profile.ssm_profile.name # To enable AWS Systems Manager(SSM) Session Manager (the "keyless" connection method)
 
@@ -41,55 +41,86 @@ EOF
 }
 
 locals {
-
-  jenkins_script = <<EOF
+  jenkins_script = <<-EOF
 #!/bin/bash
-# Wait for apt lock
-while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
+# 1. Wait for apt lock (prevents race conditions with cloud-init)
+while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do 
+  echo "Waiting for apt lock..."
+  sleep 5
+done
 
-# 1. Install Java (Jenkins requirement)
+# 2. Cleanup ANY previous attempts (Safe even on new instances)
+sudo rm -f /etc/apt/sources.list.d/jenkins.list
+sudo rm -f /usr/share/keyrings/jenkins-keyring.gpg
+sudo rm -f /etc/apt/trusted.gpg.d/jenkins.gpg
+
+# 3. Install Dependencies
 sudo apt update -y
-sudo apt install fontconfig openjdk-17-jre -y
+sudo apt install fontconfig openjdk-21-jre -y
+java -version
 
-# 2. Install Jenkins
-sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
-  https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
-  https://pkg.jenkins.io/debian-stable binary/" | sudo tee \
+# 4. Add Jenkins Key
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+
+# 5. Add the Repository
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
   /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+# 6. Install Jenkins
 sudo apt update -y
 sudo apt install jenkins -y
-sudo systemctl start jenkins
+
+# --- Configure Jenkins Path Prefix ---
+# This creates a systemd override to add the --prefix=/jenkins argument
+sudo mkdir -p /etc/systemd/system/jenkins.service.d
+# echo -e "[Service]\nEnvironment=\"JENKINS_OPTS=--prefix=/jenkins\"" | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
+cat <<EOT | sudo tee /etc/systemd/system/jenkins.service.d/override.conf
+[Service]
+Environment="JENKINS_OPTS=--prefix=/jenkins"
+Environment="JENKINS_ARGS=--prefix=/jenkins"
+EOT
+
+# 7. Service Management (CRITICAL)
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
 sudo systemctl enable jenkins
+sudo systemctl restart jenkins
 
-# 3. Install Git
-sudo apt install git -y
 
-# Save the Initial Admin Password to a file for easy access
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword > /home/ubuntu/jenkins_admin_password.txt
-chown ubuntu:ubuntu /home/ubuntu/jenkins_admin_password.txt
-echo "Terraform Userdata Setup Success in jenkins machine" > /home/ubuntu/success.txt
-
+# 8. Password Retrieval Loop
+# Jenkins takes a moment to generate the file on the first run
+echo "Waiting for Jenkins to generate admin password..."
+for i in {1..15}; do
+    if [ -f /var/lib/jenkins/secrets/initialAdminPassword ]; then
+        sudo cat /var/lib/jenkins/secrets/initialAdminPassword | sudo tee /home/ubuntu/jenkins_admin_password.txt > /dev/null
+        sudo chown ubuntu:ubuntu /home/ubuntu/jenkins_admin_password.txt
+        echo "Jenkins Setup Success" > /home/ubuntu/success.txt
+        break
+    fi
+    sleep 10
+done
 EOF
 }
 
 # Generate the Private Key
-resource "tls_private_key" "jenkins_key" {
+resource "tls_private_key" "key" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 # Save the Private Key locally (the .pem file)
 resource "local_file" "private_key" {
-  content  = tls_private_key.jenkins_key.private_key_pem
+  content  = tls_private_key.key.private_key_pem
   filename = "${path.module}/${var.server_name}-key.pem" # Unique file for each server
   file_permission = "0600" # Important: SSH won't work if permissions are too open
 }
 
 # Upload the Public Key to AWS
-resource "aws_key_pair" "jenkins_key_pair" {
+resource "aws_key_pair" "key_pair" {
   key_name   = "${var.server_name}-key" # This makes it unique (e.g., Jenkins-Server-key)
-  public_key = tls_private_key.jenkins_key.public_key_openssh
+  public_key = tls_private_key.key.public_key_openssh
 }
 
 

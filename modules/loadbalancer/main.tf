@@ -42,8 +42,14 @@ resource "aws_lb_target_group" "tg" {
 
   health_check {
     # Jenkins usually responds at /login, App at /
-    path = each.key == "jenkins-terraform" ? "/login" : "/"
+    path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/"
     port = "traffic-port"
+    protocol            = "HTTP"
+    matcher             = "200,403" # 403 is also okay for a health check
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    interval            = 30
+    timeout             = 5
   }
 }
 
@@ -69,7 +75,7 @@ resource "aws_lb_listener_rule" "jenkins_rule" {
 
   condition {
     path_pattern {
-      values = ["/jenkins*"]
+      values = ["/jenkins", "/jenkins/*"]
     }
   }
 }

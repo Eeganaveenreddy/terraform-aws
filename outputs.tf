@@ -1,4 +1,4 @@
-output "instance_ips" {
+output "private_instance_ips" {
   value = {
     for name, instance in module.ec2 : name => instance.private_ip
   }
