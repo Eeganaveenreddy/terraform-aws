@@ -19,8 +19,8 @@ module "ec2" {
 }
 
 module "app_alb" {
-  source   = "./modules/loadbalancer"
-  alb_name = var.alb_name
+  source        = "./modules/loadbalancer"
+  alb_name      = var.alb_name
   server_config = var.server_config
 
   # sg_id            = [for instance in module.ec2 : instance.sg_id]
@@ -29,7 +29,7 @@ module "app_alb" {
   #   if key == "app-terraform"
   # ]
 
-  vpc_id            = module.vpc.vpc_id
+  vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_ids
 }
 
@@ -44,4 +44,10 @@ resource "aws_lb_target_group_attachment" "app_attachment" {
   target_group_arn = module.app_alb.target_group_arns[each.key]
   target_id        = module.ec2[each.key].instance_id
   port             = each.key == "jenkins-terraform" ? 8080 : 80
+}
+
+module "jump-server" {
+  source           = "./modules/jump-host"
+  vpc_id           = module.vpc.vpc_id
+  public_subnet_id = module.vpc.public_subnet_ids
 }
