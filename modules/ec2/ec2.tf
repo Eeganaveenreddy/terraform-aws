@@ -22,6 +22,9 @@ resource "aws_instance" "instances" {
 
   lifecycle {
     create_before_destroy = true # Builds the new server before killing the old one
+    replace_triggered_by = [
+    aws_key_pair.key_pair.id
+  ]
   }
 
 }
@@ -56,7 +59,8 @@ sudo rm -f /etc/apt/trusted.gpg.d/jenkins.gpg
 
 # 3. Install Dependencies
 sudo apt update -y
-sudo apt install fontconfig openjdk-21-jre -y
+sudo apt install -y fontconfig openjdk-17-jre-headless
+sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
 java -version
 
 # 4. Add Jenkins Key
