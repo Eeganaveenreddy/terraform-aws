@@ -37,19 +37,26 @@ resource "aws_lb_target_group" "tg" {
   vpc_id      = var.vpc_id
   protocol    = "HTTP"
   
-  # Map port 8080 for Jenkins, 80 for App
-  port        = each.key == "jenkins-terraform" ? 8080 : 80
+  # Map port 8080 for Jenkins, 8069 for App
+  port        = each.key == "jenkins-terraform" ? 8080 : 8069
 
   health_check {
     # Jenkins usually responds at /login, App at /
-    path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/"
+    path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/web/database/selector"
     port = "traffic-port"
     protocol            = "HTTP"
-    matcher             = "200,403" # 403 is also okay for a health check
+    matcher             = each.key == "jenkins-terraform" ? "200,403" : "200"
     healthy_threshold   = 2
     unhealthy_threshold = 2
     interval            = 30
     timeout             = 5
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+  tags = {
+    Name = "tg-${each.key}"
   }
 }
 
@@ -78,6 +85,8 @@ resource "aws_lb_listener_rule" "jenkins_rule" {
       values = ["/jenkins", "/jenkins/*"]
     }
   }
+
+  depends_on = [ aws_lb_target_group.tg ]
 }
 
 # Security Group for the ALB

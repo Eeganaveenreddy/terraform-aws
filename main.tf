@@ -5,7 +5,13 @@ module "vpc" {
 
 module "ec2" {
   source        = "./modules/ec2"
-  for_each      = var.server_config
+  # for_each      = var.server_config
+  for_each = {
+    for k, v in var.server_config :
+    k => v
+    if !try(v.is_db, false)
+  }
+
   server_name   = each.key
   ami_id        = each.value.ami_id
   instance_type = each.value.instance_type
@@ -16,6 +22,29 @@ module "ec2" {
   #   iam_instance_profile_name = var.iam_instance_profile_name
 
   alb_sg_id = module.app_alb.alb_sg_id
+}
+
+module "db" {
+  source = "./modules/db"
+  # for_each = var.server_config
+  for_each = {
+  for k, v in var.server_config :
+  k => v
+  if try(v.is_db, false)
+}
+
+  server_name = each.key
+  ami_id = each.value.ami_id
+  instance_type = each.value.instance_type
+  ingress_ports = each.value.ingress_ports
+
+  vpc_id            = module.vpc.vpc_id
+  private_subnet_id = module.vpc.private_subnet_ids[0]
+
+  sg_id = module.ec2.sg_id
+
+  key_name = module.ec2.key_name
+
 }
 
 module "app_alb" {
@@ -43,7 +72,7 @@ resource "aws_lb_target_group_attachment" "app_attachment" {
 
   target_group_arn = module.app_alb.target_group_arns[each.key]
   target_id        = module.ec2[each.key].instance_id
-  port             = each.key == "jenkins-terraform" ? 8080 : 80
+  port             = each.key == "jenkins-terraform" ? 8080 : 8069
 }
 
 module "jump-server" {

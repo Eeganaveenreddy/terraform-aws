@@ -12,10 +12,10 @@ resource "aws_security_group" "sg" {
     protocol  = "tcp"
     
     # If the port is 80 (App), don't use CIDR. Use null instead.
-    cidr_blocks = contains([80, 8080], port_info.value) ? [] : ["0.0.0.0/0"]
+    cidr_blocks = contains([8069, 8080], port_info.value) ? [] : ["0.0.0.0/0"]
 
     # If the port is 80 (App), attach the ALB Security Group ID.
-    security_groups = contains([80, 8080], port_info.value) ? [var.alb_sg_id] : []
+    security_groups = contains([8069, 8080], port_info.value) ? [var.alb_sg_id] : []
 
   }
 }
