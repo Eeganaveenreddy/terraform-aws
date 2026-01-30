@@ -76,6 +76,26 @@ sudo systemctl daemon-reload
 sudo systemctl enable jenkins
 sudo systemctl restart jenkins
 
+# # -----------------------------
+# # Fix Jenkins Offline Mode
+# # -----------------------------
+# echo "=== Fixing Jenkins Update Center Offline Mode ==="
+
+# # Wait for update center file to exist
+# for i in {1..30}; do
+#   if [ -f /var/lib/jenkins/hudson.model.UpdateCenter.xml ]; then
+#     sed -i 's/<offline>true/<offline>false/' /var/lib/jenkins/hudson.model.UpdateCenter.xml
+#     systemctl restart jenkins
+#     echo "Jenkins offline mode disabled"
+#     break
+#   fi
+#   echo "Waiting for Jenkins update center file..."
+#   sleep 10
+# done
+
+# -----------------------------
+# Get Admin Password
+# -----------------------------
 echo "=== Waiting for Jenkins Admin Password ==="
 for i in {1..20}; do
   if [ -f /var/lib/jenkins/secrets/initialAdminPassword ]; then
