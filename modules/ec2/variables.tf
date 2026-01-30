@@ -6,7 +6,4 @@ variable "private_subnet_id" {}
 variable "server_name" {}
 variable "ingress_ports" {}
 variable "alb_sg_id" {}
-# variable "iam_instance_profile_name" {
-#   type    = string
-#   default = "jenkins-instance-profile"
-# }
+variable "iam_instance_profile" {}

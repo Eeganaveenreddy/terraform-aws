@@ -3,8 +3,12 @@ module "vpc" {
   vpc_cidr = var.vpc_cidr
 }
 
+module "iam" {
+  source = "./modules/iam"
+}
+
 module "ec2" {
-  source        = "./modules/ec2"
+  source = "./modules/ec2"
   # for_each      = var.server_config
   for_each = {
     for k, v in var.server_config :
@@ -17,6 +21,11 @@ module "ec2" {
   instance_type = each.value.instance_type
   ingress_ports = each.value.ingress_ports
 
+  # IAM instance profile logic
+  # terraform-runner → terraform IAM role
+  # all others       → common EC2 IAM role
+  iam_instance_profile = each.key == "terraform-runner" ? module.iam.iam_instance_profile_terraform_runner : module.iam.iam_instance_profile_ec2instances
+
   vpc_id            = module.vpc.vpc_id
   private_subnet_id = module.vpc.private_subnet_ids[0]
   #   iam_instance_profile_name = var.iam_instance_profile_name
@@ -28,13 +37,13 @@ module "db" {
   source = "./modules/db"
   # for_each = var.server_config
   for_each = {
-  for k, v in var.server_config :
-  k => v
-  if try(v.is_db, false)
-}
+    for k, v in var.server_config :
+    k => v
+    if try(v.is_db, false)
+  }
 
-  server_name = each.key
-  ami_id = each.value.ami_id
+  server_name   = each.key
+  ami_id        = each.value.ami_id
   instance_type = each.value.instance_type
   ingress_ports = each.value.ingress_ports
 
@@ -75,8 +84,8 @@ resource "aws_lb_target_group_attachment" "app_attachment" {
   port             = each.key == "jenkins-terraform" ? 8080 : 8069
 }
 
-module "jump-server" {
-  source           = "./modules/jump-host"
-  vpc_id           = module.vpc.vpc_id
-  public_subnet_id = module.vpc.public_subnet_ids
-}
+# module "jump-server" {
+#   source           = "./modules/jump-host"
+#   vpc_id           = module.vpc.vpc_id
+#   public_subnet_id = module.vpc.public_subnet_ids
+# }
