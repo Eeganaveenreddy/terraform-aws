@@ -12,6 +12,9 @@ resource "aws_instance" "instances" {
 
   tags = {
     Name = var.server_name
+    Role = var.server_name == "terraform-runner" ? "terraform-runner" : null
+    Environment = var.env
+    Region     = var.region
   }
 
   lifecycle {

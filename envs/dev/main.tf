@@ -1,14 +1,14 @@
 module "vpc" {
-  source   = "./modules/vpc"
+  source   = "../../modules/vpc"
   vpc_cidr = var.vpc_cidr
 }
 
 module "iam" {
-  source = "./modules/iam"
+  source = "../../modules/iam"
 }
 
 module "ec2" {
-  source = "./modules/ec2"
+  source = "../../modules/ec2"
   # for_each      = var.server_config
   for_each = {
     for k, v in var.server_config :
@@ -20,6 +20,9 @@ module "ec2" {
   ami_id        = each.value.ami_id
   instance_type = each.value.instance_type
   ingress_ports = each.value.ingress_ports
+
+  env    = var.env
+  region = var.aws_region
 
   # IAM instance profile logic
   # terraform-runner → terraform IAM role
@@ -34,7 +37,7 @@ module "ec2" {
 }
 
 module "db" {
-  source = "./modules/db"
+  source = "../../modules/db"
   # for_each = var.server_config
   for_each = {
     for k, v in var.server_config :
@@ -57,7 +60,7 @@ module "db" {
 }
 
 module "app_alb" {
-  source        = "./modules/loadbalancer"
+  source        = "../../modules/loadbalancer"
   alb_name      = var.alb_name
   server_config = var.server_config
 
@@ -83,9 +86,3 @@ resource "aws_lb_target_group_attachment" "app_attachment" {
   target_id        = module.ec2[each.key].instance_id
   port             = each.key == "jenkins-terraform" ? 8080 : 8069
 }
-
-# module "jump-server" {
-#   source           = "./modules/jump-host"
-#   vpc_id           = module.vpc.vpc_id
-#   public_subnet_id = module.vpc.public_subnet_ids
-# }
