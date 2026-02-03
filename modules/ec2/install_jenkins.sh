@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euxo pipefail
 
+echo "=== Fixing APT metadata ==="
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get clean
+sudo apt-get update -y
+
 LOG=/var/log/jenkins-userdata.log
 exec > >(tee -a $LOG) 2>&1
 

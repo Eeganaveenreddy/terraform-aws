@@ -45,7 +45,7 @@ resource "aws_lb_target_group" "tg" {
     path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/web/database/selector"
     port = "traffic-port"
     protocol            = "HTTP"
-    matcher             = each.key == "jenkins-terraform" ? "200,403" : "200"
+    matcher             = each.key == "jenkins-terraform" ? "200,403" : "200-399"
     healthy_threshold   = 2
     unhealthy_threshold = 2
     interval            = 30

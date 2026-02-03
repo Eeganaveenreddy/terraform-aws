@@ -30,7 +30,7 @@ module "ec2" {
   # IAM instance profile logic
   # terraform-runner → terraform IAM role
   # all others       → common EC2 IAM role
-  iam_instance_profile = coalesce(each.value.role, "compute") == "runner" ? module.iam.iam_instance_profile_terraform_runner : module.iam.iam_instance_profile_ec2instances
+  iam_instance_profile = coalesce(each.value.role, "compute") == "terraform-runner" ? module.iam.iam_instance_profile_terraform_runner : module.iam.iam_instance_profile_ec2instances
 
   vpc_id            = module.vpc.vpc_id
   private_subnet_id = module.vpc.private_subnet_ids[0]
