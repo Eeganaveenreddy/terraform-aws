@@ -13,7 +13,7 @@ module "ec2" {
   for_each = {
     for k, v in var.server_config :
     k => v
-    if !try(v.is_db, false)
+    if !coalesce(v.is_db, false)
   }
 
   server_name   = each.key
@@ -24,14 +24,16 @@ module "ec2" {
   env    = var.env
   region = var.aws_region
 
+  is_db = coalesce(each.value.is_db, false)
+  role = coalesce(each.value.role, "compute")
+
   # IAM instance profile logic
   # terraform-runner → terraform IAM role
   # all others       → common EC2 IAM role
-  iam_instance_profile = each.key == "terraform-runner" ? module.iam.iam_instance_profile_terraform_runner : module.iam.iam_instance_profile_ec2instances
+  iam_instance_profile = coalesce(each.value.role, "compute") == "terraform-runner" ? module.iam.iam_instance_profile_terraform_runner : module.iam.iam_instance_profile_ec2instances
 
   vpc_id            = module.vpc.vpc_id
   private_subnet_id = module.vpc.private_subnet_ids[0]
-  #   iam_instance_profile_name = var.iam_instance_profile_name
 
   alb_sg_id = module.app_alb.alb_sg_id
 }
@@ -42,7 +44,7 @@ module "db" {
   for_each = {
     for k, v in var.server_config :
     k => v
-    if try(v.is_db, false)
+    if coalesce(v.is_db, false)
   }
 
   server_name   = each.key
@@ -50,13 +52,17 @@ module "db" {
   instance_type = each.value.instance_type
   ingress_ports = each.value.ingress_ports
 
+  env    = var.env
+  region = var.aws_region
+
+  # 👇 PASS FROM SERVER CONFIG
+  is_db = coalesce(each.value.is_db, false)
+  role = coalesce(each.value.role, "database")
+
+  iam_instance_profile = each.key == "db-terraform" ? module.iam.iam_instance_profile_ec2instances : null
+
   vpc_id            = module.vpc.vpc_id
   private_subnet_id = module.vpc.private_subnet_ids[0]
-
-  sg_id = module.ec2.sg_id
-
-  key_name = module.ec2.key_name
-
 }
 
 module "app_alb" {

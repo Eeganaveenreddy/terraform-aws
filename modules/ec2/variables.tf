@@ -16,3 +16,16 @@ variable "region" {
   description = "AWS region"
   type        = string
 }
+
+variable "is_db" {
+  description = "Flag to indicate if this instance is a database server"
+  type        = bool
+  default     = false
+}
+variable "role" {
+  description = "Logical role of the instance (ci, app, database, runner, compute)"
+  type        = string
+  default     = "compute"
+}
+
+

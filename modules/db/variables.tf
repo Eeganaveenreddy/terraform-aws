@@ -5,8 +5,27 @@ variable "instance_type" {}
 variable "private_subnet_id" {}
 variable "server_name" {}
 variable "ingress_ports" {}
-variable "key_name" {
-#   description = "Key pair name for DB EC2"
-#   type        = string
+variable "iam_instance_profile" {}
+variable "env" {
+  description = "Environment name (dev, sit, prod)"
+  type        = string
 }
-variable "sg_id" {}
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+variable "is_db" {
+  description = "Flag to indicate if this instance is a database server"
+  type        = bool
+  default     = false
+}
+variable "role" {
+  description = "Logical role of the instance (ci, app, database, runner, compute)"
+  type        = string
+  default     = "database"
+  validation {
+    condition     = contains(["database"], var.role)
+    error_message = "DB module only supports role = database"
+  }
+}
+

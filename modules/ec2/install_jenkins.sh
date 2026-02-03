@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euxo pipefail
 
+echo "=== Fixing APT metadata ==="
+sudo rm -rf /var/lib/apt/lists/*
+sudo apt-get clean
+sudo apt-get update -y
+
 LOG=/var/log/jenkins-userdata.log
 exec > >(tee -a $LOG) 2>&1
 
@@ -46,6 +51,15 @@ java -version
 JAVA_PATH=$(readlink -f $(which java))
 JAVA_HOME=$(dirname $(dirname $JAVA_PATH))
 echo "JAVA_HOME=$JAVA_HOME"
+
+echo "=== Installing AWS CLI v2 ==="
+curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+sudo apt-get install -y unzip
+unzip awscliv2.zip
+sudo ./aws/install
+
+echo "=== Verify AWS CLI ==="
+aws --version
 
 echo "=== Add Jenkins Repo & Key ==="
 sudo mkdir -p /etc/apt/keyrings

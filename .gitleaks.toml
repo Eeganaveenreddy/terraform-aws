@@ -1,0 +1,5 @@
+[[rules]]
+id = "generic-keyword-secret"
+description = "Block any line with secret keywords"
+regex = '''(?i)(secret|access\s*key|apikey|token|password)\s*=\s*.+'''
+tags = ["custom", "keyword"]

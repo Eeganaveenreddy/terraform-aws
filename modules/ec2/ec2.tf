@@ -6,25 +6,32 @@ resource "aws_instance" "instances" {
 
   iam_instance_profile = var.iam_instance_profile
 
-  # user_data = var.server_name == "terraform-runner" ? local.terraform_script : (var.server_name == "jenkins-terraform" ? local.jenkins_script : null)
-  user_data = var.server_name == "terraform-runner" ? file("${path.module}/install_terraform.sh") : (var.server_name == "jenkins-terraform" ? file("${path.module}/install_jenkins.sh") : null)
+  # user_data = var.server_name == "terraform-runner" ? file("${path.module}/install_terraform.sh") : (var.server_name == "jenkins-terraform" ? file("${path.module}/install_jenkins.sh") : null)
+  user_data = (
+  var.role == "terraform-runner"  ? file("${path.module}/install_terraform.sh") :
+  var.role == "ci"      ? file("${path.module}/install_jenkins.sh") :
+  null
+  )
+
   user_data_replace_on_change = true
 
   tags = {
     Name = var.server_name
-    Role = var.server_name == "terraform-runner" ? "terraform-runner" : null
     Environment = var.env
     Region     = var.region
+    Role        = var.role
   }
 
   lifecycle {
     create_before_destroy = true # Builds the new server before killing the old one
-  #   replace_triggered_by = [
-  #   aws_key_pair.key_pair.id
-  # ]
   }
   depends_on = [ var.private_subnet_id ]
 }
+
+data "aws_subnet" "private" {
+  id = var.private_subnet_id
+}
+
 
 # # Generate the Private Key
 # resource "tls_private_key" "key" {

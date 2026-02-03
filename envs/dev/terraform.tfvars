@@ -9,6 +9,7 @@ server_config = {
     ingress_ports = [8080]
     server_name   = "jenkins-terraform"
     alb_enabled   = true
+    role          = "ci"
   },
   "app-terraform" = {
     # ami_id        = "ami-02b8269d5e85954ef"
@@ -17,15 +18,17 @@ server_config = {
     ingress_ports = [8069]
     server_name   = "app-terraform"
     alb_enabled   = true
+    role          = "app"
   },
   "db-terraform" = {
     # ami_id        = "ami-02b8269d5e85954ef"
     ami_id        = "ami-06d67eedaf8ee98fe"
-    instance_type = "t3.micro"
+    instance_type = "t3.medium"
     ingress_ports = [5432]
     server_name   = "db-terraform"
     alb_enabled   = false
     is_db         = true
+    role          = "database"
   },
   "terraform-runner" = {
     ami_id        = "ami-02b8269d5e85954ef"
@@ -33,5 +36,6 @@ server_config = {
     ingress_ports = []
     server_name   = "terraform-runner"
     alb_enabled   = false
+    role          = "terraform-runner"
   }
 }
