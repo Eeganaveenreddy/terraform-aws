@@ -22,6 +22,10 @@ variable "is_db" {
 variable "role" {
   description = "Logical role of the instance (ci, app, database, runner, compute)"
   type        = string
-  default     = "compute"
+  default     = "database"
+  validation {
+    condition     = contains(["database"], var.role)
+    error_message = "DB module only supports role = database"
+  }
 }
 
