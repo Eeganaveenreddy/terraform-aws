@@ -31,7 +31,6 @@ module "ec2" {
 
   vpc_id            = module.vpc.vpc_id
   private_subnet_id = module.vpc.private_subnet_ids[0]
-  #   iam_instance_profile_name = var.iam_instance_profile_name
 
   alb_sg_id = module.app_alb.alb_sg_id
 }
@@ -42,7 +41,7 @@ module "db" {
   for_each = {
     for k, v in var.server_config :
     k => v
-    if try(v.is_db, false)
+    if try(v.is_db, true)
   }
 
   server_name   = each.key
@@ -50,12 +49,15 @@ module "db" {
   instance_type = each.value.instance_type
   ingress_ports = each.value.ingress_ports
 
+  env    = var.env
+  region = var.aws_region
+
+  iam_instance_profile = each.key == "db-terraform" ? module.iam.iam_instance_profile_ec2instances : null
+
   vpc_id            = module.vpc.vpc_id
   private_subnet_id = module.vpc.private_subnet_ids[0]
 
-  sg_id = module.ec2.sg_id
-
-  key_name = module.ec2.key_name
+  sg_id = module.ec2[each.key].sg_id
 
 }
 

@@ -5,8 +5,13 @@ variable "instance_type" {}
 variable "private_subnet_id" {}
 variable "server_name" {}
 variable "ingress_ports" {}
-variable "key_name" {
-#   description = "Key pair name for DB EC2"
-#   type        = string
-}
+variable "iam_instance_profile" {}
 variable "sg_id" {}
+variable "env" {
+  description = "Environment name (dev, sit, prod)"
+  type        = string
+}
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
