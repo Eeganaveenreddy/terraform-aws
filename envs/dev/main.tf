@@ -57,6 +57,7 @@ module "db" {
 
   # 👇 PASS FROM SERVER CONFIG
   is_db = coalesce(each.value.is_db, false)
+  role = coalesce(each.value.role, "database")
 
   iam_instance_profile = each.key == "db-terraform" ? module.iam.iam_instance_profile_ec2instances : null
 
