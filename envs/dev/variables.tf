@@ -22,6 +22,8 @@ variable "server_config" {
     ingress_ports = list(number)
     server_name   = string
     alb_enabled   = bool
+    is_db = optional(bool)
+    role  = optional(string)
   }))
   # No default needed here if you provide it in .tfvars
 }

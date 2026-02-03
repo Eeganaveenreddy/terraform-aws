@@ -2,7 +2,7 @@ resource "aws_instance" "db_instance" {
   ami = var.ami_id
   instance_type = var.instance_type
   subnet_id = var.private_subnet_id
-  vpc_security_group_ids = [var.sg_id]
+  vpc_security_group_ids = [aws_security_group.db_sg.id]
 
   # key_name = var.key_name
   iam_instance_profile = var.iam_instance_profile
@@ -13,7 +13,8 @@ resource "aws_instance" "db_instance" {
   tags = {
     Name        = var.server_name
     Environment = var.env
-    Role = var.server_name == "db-terraform" ? "db-terraform" : null
+    Role        = var.role
+    # Role        = coalesce(var.is_db, false) ? "database" : "null"
     Region     = var.region
   }
 

@@ -4,3 +4,7 @@ output "private_instance_ips" {
   }
   description = "Private IP addresses for all deployed instances"
 }
+
+output "db_private_ip" {
+  value = [for k, m in module.db : m.private_ip]
+}
