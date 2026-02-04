@@ -12,8 +12,8 @@ server_config = {
     role          = "ci"
   },
   "app-terraform" = {
-    # ami_id        = "ami-0b5799f0ff415c617" # new App Image
-    ami_id        = "ami-015ed7dbfc98f9d7c"
+    ami_id        = "ami-0b5799f0ff415c617" # new App Image
+    # ami_id        = "ami-015ed7dbfc98f9d7c"
     instance_type = "t3.micro"
     ingress_ports = [8069]
     server_name   = "app-terraform"
@@ -21,8 +21,8 @@ server_config = {
     role          = "app"
   },
   "db-terraform" = {
-    # ami_id        = "ami-03248082faa96aff5" # new DB image
-    ami_id        = "ami-06d67eedaf8ee98fe"
+    ami_id        = "ami-03248082faa96aff5" # new DB image
+    # ami_id        = "ami-06d67eedaf8ee98fe"
     instance_type = "t3.medium"
     ingress_ports = [5432]
     server_name   = "db-terraform"
