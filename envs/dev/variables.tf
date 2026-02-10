@@ -24,6 +24,7 @@ variable "server_config" {
     alb_enabled   = bool
     is_db = optional(bool)
     role  = optional(string)
+    root_volume_size = optional(number)
   }))
   # No default needed here if you provide it in .tfvars
 }

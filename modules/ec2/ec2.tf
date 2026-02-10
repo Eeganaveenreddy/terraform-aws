@@ -15,6 +15,13 @@ resource "aws_instance" "instances" {
 
   user_data_replace_on_change = true
 
+  root_block_device {
+  volume_size = var.root_volume_size != null ? var.root_volume_size : 8
+  volume_type = "gp3"
+  delete_on_termination = true
+  }
+
+
   tags = {
     Name = var.server_name
     Environment = var.env

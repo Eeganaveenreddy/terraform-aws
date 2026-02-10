@@ -36,6 +36,9 @@ module "ec2" {
   private_subnet_id = module.vpc.private_subnet_ids[0]
 
   alb_sg_id = module.app_alb.alb_sg_id
+
+  root_volume_size = try(each.value.root_volume_size, null)
+
 }
 
 module "db" {

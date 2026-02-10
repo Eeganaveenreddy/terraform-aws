@@ -27,5 +27,9 @@ variable "role" {
   type        = string
   default     = "compute"
 }
+variable "root_volume_size" {
+  type    = number
+  default = null
+}
 
 
