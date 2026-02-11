@@ -198,6 +198,10 @@ pipeline {
               return true
             }
           }
+
+          if (env.SSM_FINAL_STATUS != 'Success') {
+            error("Remote terraform apply failed with SSM status: ${env.SSM_FINAL_STATUS}")
+          }
         }
       }
     }
@@ -224,11 +228,6 @@ pipeline {
         fi
       '''
       archiveArtifacts artifacts: 'ssm-parameters.json,ssm-stdout.log,ssm-stderr.log', onlyIfSuccessful: false, allowEmptyArchive: true
-      script {
-        if (env.SSM_FINAL_STATUS && env.SSM_FINAL_STATUS != 'Success') {
-          error("Remote terraform apply failed with SSM status: ${env.SSM_FINAL_STATUS}")
-        }
-      }
     }
   }
 }
