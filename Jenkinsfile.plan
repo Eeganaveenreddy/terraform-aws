@@ -32,7 +32,7 @@ pipeline {
     )
     string(
       name: 'GIT_REF',
-      defaultValue: 'main',
+      defaultValue: 'master',
       description: 'Git branch/tag to checkout on terraform-runner'
     )
     string(
