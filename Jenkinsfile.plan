@@ -118,7 +118,7 @@ pipeline {
           }
 
           def remoteCommands = [
-            "set -eu",
+            "set -eux",
             "mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts",
             "ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true",
             "test -f /home/ubuntu/.ssh/id_ed25519 || (echo 'Missing SSH key: /home/ubuntu/.ssh/id_ed25519 on terraform-runner' && exit 1)",
