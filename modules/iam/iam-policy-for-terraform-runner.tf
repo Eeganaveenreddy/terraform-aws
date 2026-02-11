@@ -12,3 +12,8 @@ resource "aws_iam_role_policy_attachment" "dynamodb" {
   role       = aws_iam_role.terraform_runner.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
+
+resource "aws_iam_role_policy_attachment" "terraform_runner_ec2_read" {
+  role       = aws_iam_role.terraform_runner.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
+}
