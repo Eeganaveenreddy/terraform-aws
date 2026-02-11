@@ -72,7 +72,7 @@ pipeline {
     stage('Prechecks') {
       steps {
         sh '''
-          set -euo pipefail
+          set -eu
           aws --version
           aws sts get-caller-identity --output json
         '''
@@ -113,7 +113,7 @@ pipeline {
           }
 
           def remoteCommands = [
-            "set -euo pipefail",
+            "set -eu",
             "if [ ! -d '${params.REMOTE_REPO_DIR}/.git' ]; then rm -rf '${params.REMOTE_REPO_DIR}'; git clone '${repoUrl}' '${params.REMOTE_REPO_DIR}'; fi",
             "cd '${params.REMOTE_REPO_DIR}'",
             "git fetch --all --prune",
