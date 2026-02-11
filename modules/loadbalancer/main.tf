@@ -46,10 +46,10 @@ resource "aws_lb_target_group" "tg" {
     port = "traffic-port"
     protocol            = "HTTP"
     matcher             = each.key == "jenkins-terraform" ? "200,403" : "200-399"
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
+    healthy_threshold   = each.key == "jenkins-terraform" ? 3 : 2
+    unhealthy_threshold = each.key == "jenkins-terraform" ? 5 : 2
     interval            = 30
-    timeout             = 5
+    timeout             = each.key == "jenkins-terraform" ? 15 : 5
   }
 
   lifecycle {
