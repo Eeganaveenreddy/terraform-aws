@@ -45,6 +45,18 @@ echo "=== Installing Java 17 ==="
 sudo apt-get update -y
 sudo apt-get install -y fontconfig openjdk-17-jre-headless
 
+echo "=== Ensure SSM Agent is installed and running ==="
+if ! dpkg -l | grep -q amazon-ssm-agent; then
+  sudo apt-get install -y amazon-ssm-agent || true
+fi
+sudo systemctl enable amazon-ssm-agent 2>/dev/null || true
+sudo systemctl restart amazon-ssm-agent 2>/dev/null || true
+if ! sudo systemctl is-active --quiet amazon-ssm-agent; then
+  sudo snap install amazon-ssm-agent --classic || true
+  sudo systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent 2>/dev/null || true
+  sudo systemctl restart snap.amazon-ssm-agent.amazon-ssm-agent 2>/dev/null || true
+fi
+
 echo "=== Verify Java ==="
 java -version
 
