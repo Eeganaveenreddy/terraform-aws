@@ -124,7 +124,7 @@ pipeline {
             "sudo -u ubuntu -H bash -lc 'set -eux; test -f /home/ubuntu/.ssh/id_ed25519 || (echo \"Missing SSH key: /home/ubuntu/.ssh/id_ed25519 on terraform-runner\" && exit 1)'",
             "sudo -u ubuntu -H bash -lc 'set -eux; if [ ! -d \"${params.REMOTE_REPO_DIR}/.git\" ]; then rm -rf \"${params.REMOTE_REPO_DIR}\"; GIT_SSH_COMMAND=\"ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new\" git clone --filter=blob:none --no-checkout \"${repoUrl}\" \"${params.REMOTE_REPO_DIR}\"; fi'",
             "sudo -u ubuntu -H bash -lc 'set -eux; cd \"${params.REMOTE_REPO_DIR}\"; GIT_SSH_COMMAND=\"ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new\" git remote set-url origin \"${repoUrl}\"; GIT_SSH_COMMAND=\"ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new\" git fetch --all --prune'",
-            "sudo -u ubuntu -H bash -lc 'set -eux; cd \"${params.REMOTE_REPO_DIR}\"; git sparse-checkout init --cone; git sparse-checkout set envs modules; git checkout \"${params.GIT_REF}\"; git reset --hard \"origin/${params.GIT_REF}\" || true'",
+            "sudo -u ubuntu -H bash -lc 'set -eux; cd \"${params.REMOTE_REPO_DIR}\"; git sparse-checkout init --cone; git sparse-checkout set envs modules; git checkout \"${params.GIT_REF}\"; git reset --hard \"origin/${params.GIT_REF}\" || true; git clean -fd'",
             "sudo -u ubuntu -H bash -lc 'set -eux; cd \"${params.REMOTE_REPO_DIR}/${params.TF_WORKING_DIR}\"; terraform -version; terraform fmt -recursive; terraform init -input=false -no-color; terraform validate -no-color; terraform plan -input=false -no-color -var-file=\"${params.TF_VAR_FILE}\"'"
           ]
 
