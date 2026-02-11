@@ -1,0 +1,66 @@
+name: Apply Terraform on terraform-runner via SSM (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to apply (branch or tag)'
+        required: true
+        default: 'main'
+
+jobs:
+  apply-remote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Send SSM command to terraform-runner to apply
+        id: send
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF: ${{ github.event.inputs.ref }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          INSTANCE_TAG="terraform-runner"
+
+          REMOTE_SCRIPT=$(cat <<'EOF'
+          set -euo pipefail
+          REF='${REF}'
+          REPO='${GITHUB_REPOSITORY}'
+          cd /home/ubuntu || true
+          if [ -d repo ]; then
+            cd repo
+            git fetch --all
+            git reset --hard origin/${REF}
+          else
+            git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY} repo
+            cd repo
+            git checkout ${REF}
+          fi
+          cd envs/dev
+          terraform init -input=false
+          terraform apply -auto-approve
+EOF
+)
+
+          CMD_ID=$(aws ssm send-command --document-name "AWS-RunShellScript" \
+            --comment "Manual apply triggered by GitHub Actions" \
+            --targets "Key=tag:Name,Values=${INSTANCE_TAG}" \
+            --parameters commands=["$REMOTE_SCRIPT"] \
+            --timeout-seconds 3600 \
+            --output text --query "Command.CommandId")
+
+          echo "command-id=$CMD_ID" >> $GITHUB_OUTPUT
+
+      - name: Show command invocation
+        run: |
+          CMD_ID=${{ steps.send.outputs.command-id }}
+          aws ssm list-command-invocations --details --command-id $CMD_ID
