@@ -129,7 +129,7 @@ pipeline {
             "git reset --hard 'origin/${params.GIT_REF}' || true",
             "cd '${params.TF_WORKING_DIR}'",
             "terraform -version",
-            "terraform fmt -check -recursive",
+            "terraform fmt -check -recursive -diff || (echo 'terraform fmt check failed. Run: terraform fmt -recursive' && exit 1)",
             "terraform init -input=false -no-color",
             "terraform validate -no-color",
             "terraform plan -input=false -no-color -var-file='${params.TF_VAR_FILE}'"
