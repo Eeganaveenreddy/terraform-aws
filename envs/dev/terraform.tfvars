@@ -4,7 +4,8 @@ alb_name   = "alb-terraform"
 
 server_config = {
   "jenkins-terraform" = {
-    ami_id        = "ami-02b8269d5e85954ef"
+    # ami_id        = "ami-02b8269d5e85954ef"
+    ami_id        = "ami-0fe95f30c3e96b8cd" # new jenkins image
     instance_type = "t3.micro"
     ingress_ports = [8080]
     server_name   = "jenkins-terraform"
