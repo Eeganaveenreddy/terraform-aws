@@ -22,7 +22,8 @@ server_config = {
     root_volume_size = 50
   },
   "terraform-runner" = {
-    ami_id        = "ami-02b8269d5e85954ef"
+    # ami_id        = "ami-02b8269d5e85954ef" # old terraform runner image
+    ami_id        = "ami-0738438d177a758a6"
     instance_type = "t3.micro"
     ingress_ports = []
     server_name   = "terraform-runner"
