@@ -9,3 +9,7 @@
 
 # Local backend config
 envs/*/backend.hcl
+
+# Local/manual Terraform state backups
+state-backup-before-option-a.json
+envs/*/state-backup-before-option-a.json

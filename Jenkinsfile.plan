@@ -131,7 +131,7 @@ pipeline {
             "cd '${params.TF_WORKING_DIR}'",
             "terraform -version",
             "terraform fmt -recursive",
-            "terraform init -input=false -no-color",
+            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${params.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
             "terraform validate -no-color",
             "terraform plan -input=false -no-color -var-file='${params.TF_VAR_FILE}'"
           ]
