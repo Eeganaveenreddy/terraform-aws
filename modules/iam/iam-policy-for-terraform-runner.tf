@@ -1,29 +1,12 @@
-resource "aws_iam_role_policy_attachment" "terraform_ssm" {
-  role       = aws_iam_role.terraform_runner.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
+resource "aws_iam_role_policy_attachments_exclusive" "terraform_runner_policies" {
+  role_name = aws_iam_role.terraform_runner.name
 
-resource "aws_iam_role_policy_attachment" "s3" {
-  role       = aws_iam_role.terraform_runner.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "dynamodb" {
-  role       = aws_iam_role.terraform_runner.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "terraform_runner_ec2_full" {
-  role       = aws_iam_role.terraform_runner.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "terraform_runner_iam_full" {
-  role       = aws_iam_role.terraform_runner.name
-  policy_arn = "arn:aws:iam::aws:policy/IAMFullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "terraform_runner_elb_full" {
-  role       = aws_iam_role.terraform_runner.name
-  policy_arn = "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
+  policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+    "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
+    "arn:aws:iam::aws:policy/AmazonEC2FullAccess",
+    "arn:aws:iam::aws:policy/IAMFullAccess",
+    "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess",
+  ]
 }

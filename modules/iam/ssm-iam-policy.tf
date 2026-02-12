@@ -1,14 +1,9 @@
-resource "aws_iam_role_policy_attachment" "ssm" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMFullAccess"
-}
+resource "aws_iam_role_policy_attachments_exclusive" "ec2_role_policies" {
+  role_name = aws_iam_role.ec2_role.name
 
-resource "aws_iam_role_policy_attachment" "ec2_read" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "SSMManagedInstanceCore" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonSSMFullAccess",
+    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+  ]
 }
