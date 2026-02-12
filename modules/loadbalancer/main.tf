@@ -41,15 +41,15 @@ resource "aws_lb_target_group" "tg" {
   port        = each.key == "jenkins-terraform" ? 8080 : 8069
 
   health_check {
-    # Jenkins usually responds at /login, App at /
-    path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/web/database/selector"
+    # Use lightweight login endpoints for faster checks.
+    path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/web/login"
     port = "traffic-port"
     protocol            = "HTTP"
     matcher             = each.key == "jenkins-terraform" ? "200,403" : "200-399"
-    healthy_threshold   = each.key == "jenkins-terraform" ? 3 : 2
-    unhealthy_threshold = each.key == "jenkins-terraform" ? 5 : 2
+    healthy_threshold   = each.key == "jenkins-terraform" ? 3 : 3
+    unhealthy_threshold = each.key == "jenkins-terraform" ? 5 : 5
     interval            = 30
-    timeout             = each.key == "jenkins-terraform" ? 15 : 5
+    timeout             = each.key == "jenkins-terraform" ? 15 : 15
   }
 
   lifecycle {
