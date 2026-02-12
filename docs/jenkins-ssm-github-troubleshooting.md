@@ -158,3 +158,78 @@ git ls-remote git@github.com:<org-or-user>/<repo>.git
 - confirm Jenkins service health on instance
 - verify SG/NAT/SSM agent status
 
+---
+
+## IAM wiring for Terraform runner (where role is configured)
+
+This is how `Terraform-Runner-Role` gets attached to the `terraform-runner` EC2.
+
+1. Role definition
+- File: `modules/iam/terraform-runner-role.tf:2`
+- Creates IAM role `Terraform-Runner-Role`.
+- Trust policy allows EC2 service (`ec2.amazonaws.com`) to assume it.
+
+2. Instance profile definition
+- File: `modules/iam/instance-profile.tf:2`
+- Creates instance profile `Terraform-Runner-Profile`.
+
+3. Role bound to instance profile
+- File: `modules/iam/instance-profile.tf:3`
+- `Terraform-Runner-Profile` is attached to `aws_iam_role.terraform_runner`.
+
+4. IAM output exported
+- File: `modules/iam/outputs.tf:5`
+- Exposes `iam_instance_profile_terraform_runner` for use by env modules.
+
+5. Profile selection logic in env
+- File: `envs/dev/main.tf:33`
+- If server role is `terraform-runner`, it picks `module.iam.iam_instance_profile_terraform_runner`.
+- Otherwise it picks default instance profile for other servers.
+
+6. Profile passed into EC2 resource
+- File: `modules/ec2/ec2.tf:7`
+- EC2 resource uses `iam_instance_profile = var.iam_instance_profile`.
+
+7. Server marked as terraform runner
+- File: `envs/dev/terraform.tfvars:41`
+- `role = "terraform-runner"` marks that server entry, which triggers step 5 logic.
+
+End-to-end flow:
+- `terraform.tfvars` marks runner -> `envs/dev/main.tf` selects runner profile -> `modules/ec2/ec2.tf` attaches it -> profile points to runner role -> role permissions are used by Terraform/AWS CLI on that EC2 (no `aws configure` needed on runner).
+
+---
+
+## Terraform remote backend setup (S3 + DynamoDB) using Terraform code
+
+### Backend infra code location
+- `envs/backend/main.tf`
+- `envs/backend/providers.tf`
+- `envs/backend/variables.tf`
+- `envs/backend/outputs.tf`
+- `envs/backend/terraform.tfvars`
+
+### Create backend infrastructure
+```bash
+cd envs/backend
+# Edit terraform.tfvars if you want non-default region/table
+terraform init
+terraform plan
+terraform apply
+```
+
+### Configure dev stack to use S3 backend
+- Backend block file: `envs/dev/backend.tf`
+
+```bash
+cd ../dev
+terraform init -migrate-state \
+  -backend-config="bucket=<your-backend-bucket-name>" \
+  -backend-config="key=terraform-aws/envs/dev/terraform.tfstate" \
+  -backend-config="region=ap-south-1" \
+  -backend-config="dynamodb_table=terraform-state-locks" \
+  -backend-config="encrypt=true"
+terraform plan
+```
+
+### Notes
+- Run backend stack first, then migrate `envs/dev` local state to S3.

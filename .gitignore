@@ -6,3 +6,6 @@
 *.tfstate.*
 .terraform/
 .crash.log
+
+# Local backend config
+envs/*/backend.hcl
