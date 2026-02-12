@@ -1,0 +1,244 @@
+import groovy.json.JsonOutput
+
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  parameters {
+    booleanParam(
+      name: 'CONFIRM_DESTROY',
+      defaultValue: false,
+      description: 'Must be true to allow destroy flow'
+    )
+    string(
+      name: 'DESTROY_CONFIRM_TEXT',
+      defaultValue: '',
+      description: 'Type DESTROY to proceed'
+    )
+    string(
+      name: 'AWS_REGION',
+      defaultValue: 'ap-south-1',
+      description: 'AWS region for SSM command execution'
+    )
+    string(
+      name: 'SSM_TARGET_TAG_KEY',
+      defaultValue: 'Name',
+      description: 'EC2 tag key used to locate terraform runner'
+    )
+    string(
+      name: 'SSM_TARGET_TAG_VALUE',
+      defaultValue: 'terraform-runner',
+      description: 'EC2 tag value used to locate terraform runner'
+    )
+    string(
+      name: 'GIT_REPO_URL',
+      defaultValue: '',
+      description: 'Optional git repo URL. If empty, Jenkins SCM URL is used.'
+    )
+    string(
+      name: 'GIT_REF',
+      defaultValue: 'master',
+      description: 'Git branch/tag to checkout on terraform-runner'
+    )
+    string(
+      name: 'REMOTE_REPO_DIR',
+      defaultValue: '/home/ubuntu/repo',
+      description: 'Repo location on terraform-runner EC2'
+    )
+    string(
+      name: 'TF_WORKING_DIR',
+      defaultValue: 'envs/dev',
+      description: 'Terraform working dir inside REMOTE_REPO_DIR'
+    )
+    string(
+      name: 'TF_VAR_FILE',
+      defaultValue: 'terraform.tfvars',
+      description: 'Variable file path relative to TF_WORKING_DIR'
+    )
+    string(
+      name: 'SSM_TIMEOUT_MINUTES',
+      defaultValue: '60',
+      description: 'Max time to wait for remote command completion'
+    )
+    string(
+      name: 'SSM_POLL_SECONDS',
+      defaultValue: '15',
+      description: 'Polling interval in seconds'
+    )
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Prechecks') {
+      steps {
+        script {
+          if (!params.CONFIRM_DESTROY) {
+            error('Set CONFIRM_DESTROY=true to continue.')
+          }
+          if (params.DESTROY_CONFIRM_TEXT?.trim() != 'DESTROY') {
+            error('Set DESTROY_CONFIRM_TEXT exactly to DESTROY.')
+          }
+        }
+        sh '''
+          set -eu
+          aws --version
+          aws sts get-caller-identity --output json
+        '''
+      }
+    }
+
+    stage('Resolve terraform-runner') {
+      steps {
+        script {
+          env.TARGET_INSTANCE_ID = sh(
+            script: """
+              aws ec2 describe-instances \
+                --region '${params.AWS_REGION}' \
+                --filters 'Name=tag:${params.SSM_TARGET_TAG_KEY},Values=${params.SSM_TARGET_TAG_VALUE}' 'Name=instance-state-name,Values=running' \
+                --query 'Reservations[].Instances[].InstanceId' \
+                --output text
+            """,
+            returnStdout: true
+          ).trim()
+
+          if (!env.TARGET_INSTANCE_ID || env.TARGET_INSTANCE_ID == 'None') {
+            error("No running EC2 instance found with tag ${params.SSM_TARGET_TAG_KEY}=${params.SSM_TARGET_TAG_VALUE}.")
+          }
+
+          if (env.TARGET_INSTANCE_ID.contains('\t')) {
+            error("Multiple EC2 instances matched tag ${params.SSM_TARGET_TAG_KEY}=${params.SSM_TARGET_TAG_VALUE}. Use a unique tag.")
+          }
+        }
+      }
+    }
+
+    stage('Manual Approval') {
+      steps {
+        input message: "Final approval: destroy Terraform resources in ${params.TF_WORKING_DIR}?"
+      }
+    }
+
+    stage('Run Terraform Destroy via SSM') {
+      steps {
+        script {
+          def repoUrl = params.GIT_REPO_URL?.trim() ? params.GIT_REPO_URL.trim() : (env.GIT_URL ?: '')
+          if (!repoUrl) {
+            error('GIT_REPO_URL is empty and Jenkins could not infer env.GIT_URL.')
+          }
+          if (repoUrl.startsWith('https://github.com/')) {
+            repoUrl = repoUrl
+              .replace('https://github.com/', 'git@github.com:')
+              .replaceAll(/\.git$/, '') + '.git'
+          }
+
+          def remoteCommands = [
+            "set -eux",
+            "mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts",
+            "ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true",
+            "test -f /home/ubuntu/.ssh/id_ed25519 || (echo 'Missing SSH key: /home/ubuntu/.ssh/id_ed25519 on terraform-runner' && exit 1)",
+            "if [ ! -d '${params.REMOTE_REPO_DIR}/.git' ]; then rm -rf '${params.REMOTE_REPO_DIR}'; HOME=/home/ubuntu GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new' git clone '${repoUrl}' '${params.REMOTE_REPO_DIR}'; fi",
+            "cd '${params.REMOTE_REPO_DIR}'",
+            "HOME=/home/ubuntu git config --global --add safe.directory '${params.REMOTE_REPO_DIR}'",
+            "HOME=/home/ubuntu GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new' git fetch --all --prune",
+            "HOME=/home/ubuntu git checkout '${params.GIT_REF}'",
+            "HOME=/home/ubuntu git reset --hard 'origin/${params.GIT_REF}' || true",
+            "cd '${params.TF_WORKING_DIR}'",
+            "terraform -version",
+            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${params.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
+            "terraform validate -no-color",
+            "terraform plan -destroy -input=false -no-color -var-file='${params.TF_VAR_FILE}' -out=tfdestroy",
+            "terraform apply -input=false -no-color -auto-approve tfdestroy"
+          ]
+
+          writeFile file: 'ssm-parameters.json', text: JsonOutput.toJson([commands: remoteCommands])
+
+          env.SSM_COMMAND_ID = sh(
+            script: """
+              aws ssm send-command \
+                --region '${params.AWS_REGION}' \
+                --document-name 'AWS-RunShellScript' \
+                --instance-ids '${env.TARGET_INSTANCE_ID}' \
+                --comment 'Jenkins terraform destroy' \
+                --parameters file://ssm-parameters.json \
+                --timeout-seconds 3600 \
+                --query 'Command.CommandId' \
+                --output text
+            """,
+            returnStdout: true
+          ).trim()
+        }
+      }
+    }
+
+    stage('Wait For SSM Result') {
+      steps {
+        script {
+          int timeoutMinutes = params.SSM_TIMEOUT_MINUTES as Integer
+          int pollSeconds = params.SSM_POLL_SECONDS as Integer
+
+          timeout(time: timeoutMinutes, unit: 'MINUTES') {
+            waitUntil {
+              def status = sh(
+                script: """
+                  aws ssm get-command-invocation \
+                    --region '${params.AWS_REGION}' \
+                    --command-id '${env.SSM_COMMAND_ID}' \
+                    --instance-id '${env.TARGET_INSTANCE_ID}' \
+                    --query 'Status' \
+                    --output text
+                """,
+                returnStdout: true
+              ).trim()
+
+              if (status in ['Pending', 'InProgress', 'Delayed']) {
+                sleep(pollSeconds)
+                return false
+              }
+
+              env.SSM_FINAL_STATUS = status
+              return true
+            }
+          }
+
+          if (env.SSM_FINAL_STATUS != 'Success') {
+            error("Remote terraform destroy failed with SSM status: ${env.SSM_FINAL_STATUS}")
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      sh '''
+        set +e
+        if [ -n "${SSM_COMMAND_ID:-}" ] && [ -n "${TARGET_INSTANCE_ID:-}" ]; then
+          aws ssm get-command-invocation \
+            --region "${AWS_REGION}" \
+            --command-id "${SSM_COMMAND_ID}" \
+            --instance-id "${TARGET_INSTANCE_ID}" \
+            --query 'StandardOutputContent' \
+            --output text > ssm-stdout.log || true
+
+          aws ssm get-command-invocation \
+            --region "${AWS_REGION}" \
+            --command-id "${SSM_COMMAND_ID}" \
+            --instance-id "${TARGET_INSTANCE_ID}" \
+            --query 'StandardErrorContent' \
+            --output text > ssm-stderr.log || true
+        fi
+      '''
+      archiveArtifacts artifacts: 'ssm-parameters.json,ssm-stdout.log,ssm-stderr.log', onlyIfSuccessful: false, allowEmptyArchive: true
+    }
+  }
+}
