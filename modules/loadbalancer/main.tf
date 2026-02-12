@@ -67,7 +67,12 @@ resource "aws_lb_listener" "test_lb_listener" {
 
   default_action {
     type = "forward"
-    target_group_arn = aws_lb_target_group.tg["app-terraform"].arn
+    forward {
+      target_group {
+        arn    = aws_lb_target_group.tg["app-terraform"].arn
+        weight = 1
+      }
+    }
   }
 }
 
@@ -76,8 +81,13 @@ resource "aws_lb_listener_rule" "jenkins_rule" {
   priority     = 100
 
   action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.tg["jenkins-terraform"].arn
+    type = "forward"
+    forward {
+      target_group {
+        arn    = aws_lb_target_group.tg["jenkins-terraform"].arn
+        weight = 1
+      }
+    }
   }
 
   condition {
