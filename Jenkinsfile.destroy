@@ -52,8 +52,8 @@ pipeline {
     )
     string(
       name: 'TF_WORKING_DIR',
-      defaultValue: 'envs/dev',
-      description: 'Terraform working dir inside REMOTE_REPO_DIR'
+      defaultValue: 'envs/dev-workload',
+      description: 'Terraform working dir inside REMOTE_REPO_DIR (set envs/dev-platform only if intentionally destroying platform)'
     )
     string(
       name: 'TF_VAR_FILE',

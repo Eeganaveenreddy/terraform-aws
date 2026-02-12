@@ -261,6 +261,31 @@ This runbook reflects fixes already applied in:
 
 ---
 
+## Current Stack Layout (Dev)
+
+Use split stacks to avoid CI self-destruction:
+
+- Platform stack: `envs/dev-platform`
+  - VPC, IAM, Jenkins, terraform-runner, ALB, target groups, Jenkins TG attachment
+- Workload stack: `envs/dev-workload`
+  - app/db instances, app TG attachment via platform remote state
+
+### Jenkins defaults
+
+- `TF_WORKING_DIR` defaults to `envs/dev-workload` in all Jenkinsfiles.
+- Set `TF_WORKING_DIR=envs/dev-platform` only for platform changes.
+
+---
+
+## Backend State Safety Rules
+
+1. Do not run `terraform init -migrate-state -force-copy` in routine Jenkins jobs.
+2. Use `terraform init -reconfigure ...` in CI.
+3. Use state migration (`-migrate-state`) only one-time during backend migration.
+4. If plan suddenly shows mass creates for existing infra, stop and validate state source/key before apply.
+
+---
+
 ## Related Docs
 
 - Historical troubleshooting notes: `docs/postmortems/jenkins-ssm-github-troubleshooting-notes.md`

@@ -178,3 +178,32 @@ git ls-remote git@github.com:<org-or-user>/<repo>.git
 ## Related Docs
 
 - Operational runbook: `docs/runbooks/jenkins-ssm-incident-runbook.md`
+
+---
+
+## Additional Incident: Remote State Overwrite in CI
+
+### What happened
+- Jenkins init command used `-migrate-state -force-copy` on each run.
+- Runner local state (partial) was copied into S3 backend key.
+- Subsequent plans showed large unexpected creates/destroys.
+
+### Root cause
+- One-time migration flags were left in recurring CI pipeline.
+
+### Impact
+- Drift between expected infra and Terraform state.
+- Risk of duplicate creation or unintended replacement/destruction.
+
+### Corrective actions
+1. Switched Jenkins init to `terraform init -reconfigure ...`.
+2. Split dev stack into:
+- `envs/dev-platform`
+- `envs/dev-workload`
+3. Defaulted Jenkins `TF_WORKING_DIR` to `envs/dev-workload`.
+4. Removed old monolithic `envs/dev` stack from repo to prevent accidental use.
+
+### Preventive controls
+- Never use `-migrate-state -force-copy` in scheduled/standard CI jobs.
+- Reserve migration flags for one-time operator-run backend transitions.
+- Validate `terraform state list` and backend key when plan behavior changes abruptly.

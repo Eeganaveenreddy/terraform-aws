@@ -15,18 +15,17 @@ variable "vpc_cidr" {
 }
 
 variable "server_config" {
-  description = "A map of server configurations for the EC2 module"
+  description = "Platform server map and ALB target group map"
   type = map(object({
-    ami_id        = string
-    instance_type = string
-    ingress_ports = list(number)
-    server_name   = string
-    alb_enabled   = bool
-    is_db = optional(bool)
-    role  = optional(string)
+    ami_id           = string
+    instance_type    = string
+    ingress_ports    = list(number)
+    server_name      = string
+    alb_enabled      = bool
+    is_db            = optional(bool)
+    role             = optional(string)
     root_volume_size = optional(number)
   }))
-  # No default needed here if you provide it in .tfvars
 }
 
 variable "alb_name" {}

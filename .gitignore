@@ -5,7 +5,17 @@
 *.tfstate
 *.tfstate.*
 .terraform/
+**/.terraform/
+envs/backend/.terraform/
 .crash.log
+crash.log
+*.tfplan
+*.tfdestroy
+.terraform.tfstate.lock.info
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Local backend config
 envs/*/backend.hcl
@@ -13,3 +23,8 @@ envs/*/backend.hcl
 # Local/manual Terraform state backups
 state-backup-before-option-a.json
 envs/*/state-backup-before-option-a.json
+
+# Jenkins/SSM runtime artifacts
+ssm-parameters.json
+ssm-stdout.log
+ssm-stderr.log
