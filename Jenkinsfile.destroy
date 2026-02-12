@@ -9,6 +9,10 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
+  environment {
+    TF_WORKING_DIR = 'envs/dev-workload'
+  }
+
   parameters {
     booleanParam(
       name: 'CONFIRM_DESTROY',
@@ -51,14 +55,9 @@ pipeline {
       description: 'Repo location on terraform-runner EC2'
     )
     string(
-      name: 'TF_WORKING_DIR',
-      defaultValue: 'envs/dev-workload',
-      description: 'Terraform working dir inside REMOTE_REPO_DIR (set envs/dev-platform only if intentionally destroying platform)'
-    )
-    string(
       name: 'TF_VAR_FILE',
       defaultValue: 'terraform.tfvars',
-      description: 'Variable file path relative to TF_WORKING_DIR'
+      description: 'Variable file path relative to envs/dev-workload'
     )
     string(
       name: 'SSM_TIMEOUT_MINUTES',
@@ -124,7 +123,7 @@ pipeline {
 
     stage('Manual Approval') {
       steps {
-        input message: "Final approval: destroy Terraform resources in ${params.TF_WORKING_DIR}?"
+        input message: "Final approval: destroy Terraform resources in ${env.TF_WORKING_DIR}?"
       }
     }
 
@@ -152,9 +151,9 @@ pipeline {
             "HOME=/home/ubuntu GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new' git fetch --all --prune",
             "HOME=/home/ubuntu git checkout '${params.GIT_REF}'",
             "HOME=/home/ubuntu git reset --hard 'origin/${params.GIT_REF}' || true",
-            "cd '${params.TF_WORKING_DIR}'",
+            "cd '${env.TF_WORKING_DIR}'",
             "terraform -version",
-            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${params.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
+            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
             "terraform validate -no-color",
             "terraform plan -destroy -input=false -no-color -var-file='${params.TF_VAR_FILE}' -out=tfdestroy",
             "terraform apply -input=false -no-color -auto-approve tfdestroy"

@@ -9,6 +9,10 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
+  environment {
+    TF_WORKING_DIR = 'envs/dev-workload'
+  }
+
   parameters {
     string(
       name: 'AWS_REGION',
@@ -41,14 +45,9 @@ pipeline {
       description: 'Repo location on terraform-runner EC2'
     )
     string(
-      name: 'TF_WORKING_DIR',
-      defaultValue: 'envs/dev-workload',
-      description: 'Terraform working dir inside REMOTE_REPO_DIR (use envs/dev-platform for platform stack)'
-    )
-    string(
       name: 'TF_VAR_FILE',
       defaultValue: 'terraform.tfvars',
-      description: 'Variable file path relative to TF_WORKING_DIR'
+      description: 'Variable file path relative to envs/dev-workload'
     )
     string(
       name: 'SSM_TIMEOUT_MINUTES',
@@ -128,10 +127,10 @@ pipeline {
             "HOME=/home/ubuntu GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new' git fetch --all --prune",
             "HOME=/home/ubuntu git checkout '${params.GIT_REF}'",
             "HOME=/home/ubuntu git reset --hard 'origin/${params.GIT_REF}' || true",
-            "cd '${params.TF_WORKING_DIR}'",
+            "cd '${env.TF_WORKING_DIR}'",
             "terraform -version",
             "terraform fmt -recursive",
-            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${params.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
+            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
             "terraform validate -no-color",
             "terraform plan -input=false -no-color -var-file='${params.TF_VAR_FILE}'"
           ]
