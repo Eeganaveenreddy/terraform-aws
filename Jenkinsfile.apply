@@ -129,7 +129,7 @@ pipeline {
           if (repoUrl.startsWith('https://github.com/')) {
             repoUrl = repoUrl
               .replace('https://github.com/', 'git@github.com:')
-              .replaceAll(/\.git$/, '') + '.git'
+              .replaceAll(/(?:\.git)+$/, '') + '.git'
           }
 
           def remoteCommands = [

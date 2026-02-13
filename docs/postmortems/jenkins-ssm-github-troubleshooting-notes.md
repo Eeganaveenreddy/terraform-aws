@@ -53,6 +53,18 @@ ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 ### Fix
 - Re-enabled URL rewrite from GitHub HTTPS to SSH (`git@github.com:...`).
+- Normalized repeated `.git` suffixes to one:
+```groovy
+repoUrl = repoUrl.replaceAll(/(?:\.git)+$/, '') + '.git'
+```
+
+### Regex note
+- Pattern: `(?:\.git)+$`
+- `(?: ... )` = non-capturing group.
+- `\.git` = literal `.git`.
+- `+` = one or more times.
+- `$` = end of string.
+- Matches `.git`, `.git.git`, `.git.git.git`, etc., only at the end.
 
 ### Files touched
 - `Jenkinsfile.plan`

@@ -108,12 +108,12 @@ pipeline {
         script {
           def repoUrl = params.GIT_REPO_URL?.trim() ? params.GIT_REPO_URL.trim() : (env.GIT_URL ?: '')
           if (!repoUrl) {
-            error('GIT_REPO_URL is empty and Jenkins could not infer env.GIT_URL.')
+            error('GIT_REPO_URL is empty and Jenkins could not get env.GIT_URL.')
           }
           if (repoUrl.startsWith('https://github.com/')) {
             repoUrl = repoUrl
               .replace('https://github.com/', 'git@github.com:')
-              .replaceAll(/\.git$/, '') + '.git'
+              .replaceAll(/(?:\.git)+$/, '') + '.git'
           }
 
           def remoteCommands = [

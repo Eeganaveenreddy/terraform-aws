@@ -275,6 +275,18 @@ Use split stacks to avoid CI self-destruction:
 - `TF_WORKING_DIR` defaults to `envs/dev-workload` in all Jenkinsfiles.
 - Set `TF_WORKING_DIR=envs/dev-platform` only for platform changes.
 
+### Repo URL normalization regex note
+
+- Pattern used: `(?:\.git)+$`
+- `(?: ... )` means a non-capturing group (used for matching, not storing).
+- `\.git` means literal `.git`.
+- `+` means one or more times.
+- `$` means end of string.
+- This matches `.git`, `.git.git`, `.git.git.git`, etc., only when it appears at the end.
+- Practical use in Jenkinsfiles:
+  `repoUrl = repoUrl.replaceAll(/(?:\.git)+$/, '') + '.git'`
+  to ensure the URL ends with exactly one `.git`.
+
 ---
 
 ## Backend State Safety Rules
