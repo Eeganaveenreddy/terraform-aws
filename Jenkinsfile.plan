@@ -139,7 +139,6 @@ pipeline {
             "terraform validate -no-color",
             "terraform plan -input=false -no-color -var-file='${params.TF_VAR_FILE}' -out=tfplan",
             "terraform show -no-color tfplan",
-            "tar -czf tfplan.tgz tfplan"
           ]
 
           writeFile file: 'ssm-parameters.json', text: JsonOutput.toJson([commands: remoteCommands])
