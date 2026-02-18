@@ -5,7 +5,8 @@ acm_certificate_arn = "arn:aws:acm:ap-south-1:566579489861:certificate/698776da-
 
 server_config = {
   "jenkins-terraform" = {
-    ami_id        = "ami-0fe95f30c3e96b8cd"
+    # ami_id        = "ami-0fe95f30c3e96b8cd"
+    ami_id        = "ami-0ae70a9f8c97a4e6c"
     instance_type = "t3.small"
     ingress_ports = [8080]
     server_name   = "jenkins-terraform"
