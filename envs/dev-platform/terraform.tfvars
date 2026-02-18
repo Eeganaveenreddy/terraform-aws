@@ -14,7 +14,7 @@ server_config = {
   # Keep app target group in platform ALB; app instance lives in dev-workload.
   "app-terraform" = {
     ami_id        = "ami-0f480abe64df75f41"
-    instance_type = "t3.micro"
+    instance_type = "c5a.xlarge"
     ingress_ports = [8069]
     server_name   = "app-terraform"
     alb_enabled   = true
