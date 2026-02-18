@@ -38,9 +38,10 @@ module "ec2" {
 }
 
 module "app_alb" {
-  source        = "../../modules/loadbalancer"
-  alb_name      = var.alb_name
-  server_config = var.server_config
+  source              = "../../modules/loadbalancer"
+  alb_name            = var.alb_name
+  acm_certificate_arn = var.acm_certificate_arn
+  server_config       = var.server_config
 
   vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_ids

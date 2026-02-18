@@ -29,3 +29,7 @@ variable "server_config" {
 }
 
 variable "alb_name" {}
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for ALB HTTPS listener"
+  type        = string
+}

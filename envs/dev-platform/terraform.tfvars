@@ -1,6 +1,7 @@
-aws_region = "ap-south-1"
-env        = "dev"
-alb_name   = "alb-terraform"
+aws_region          = "ap-south-1"
+env                 = "dev"
+alb_name            = "alb-terraform"
+acm_certificate_arn = "arn:aws:acm:ap-south-1:566579489861:certificate/698776da-a9fc-4ebb-a9e5-6c65986eb048"
 
 server_config = {
   "jenkins-terraform" = {
@@ -13,12 +14,12 @@ server_config = {
   },
   # Keep app target group in platform ALB; app instance lives in dev-workload.
   "app-terraform" = {
-    ami_id        = "ami-0f480abe64df75f41"
-    instance_type = "c5a.xlarge"
-    ingress_ports = [8069]
-    server_name   = "app-terraform"
-    alb_enabled   = true
-    role          = "app"
+    ami_id           = "ami-0f480abe64df75f41"
+    instance_type    = "c5a.xlarge"
+    ingress_ports    = [8069]
+    server_name      = "app-terraform"
+    alb_enabled      = true
+    role             = "app"
     root_volume_size = 50
   },
   "terraform-runner" = {

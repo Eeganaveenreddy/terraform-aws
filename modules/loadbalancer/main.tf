@@ -8,8 +8,8 @@ resource "aws_lb" "test" {
   # enable_deletion_protection = true
 
   tags = {
-    Environment = "demo-testing"
-    Name = "alb-terrafrom"
+    Environment = "uat"
+    Name        = "alb-terrafrom"
   }
 }
 
@@ -23,7 +23,7 @@ resource "aws_lb" "test" {
 #   lifecycle {
 #     create_before_destroy = true
 #   }
-  
+
 #   health_check {
 #     path = "/"
 #     port = "80"
@@ -36,14 +36,14 @@ resource "aws_lb_target_group" "tg" {
   name_prefix = "tg-${substr(each.key, 0, 3)}"
   vpc_id      = var.vpc_id
   protocol    = "HTTP"
-  
+
   # Map port 8080 for Jenkins, 8069 for App
-  port        = each.key == "jenkins-terraform" ? 8080 : 8069
+  port = each.key == "jenkins-terraform" ? 8080 : 8069
 
   health_check {
     # Use lightweight login endpoints for faster checks.
-    path = each.key == "jenkins-terraform" ? "/jenkins/login" : "/web/login"
-    port = "traffic-port"
+    path                = each.key == "jenkins-terraform" ? "/jenkins/login" : "/web/login"
+    port                = "traffic-port"
     protocol            = "HTTP"
     matcher             = each.key == "jenkins-terraform" ? "200,403" : "200-399"
     healthy_threshold   = each.key == "jenkins-terraform" ? 3 : 3
@@ -60,10 +60,12 @@ resource "aws_lb_target_group" "tg" {
   }
 }
 
-resource "aws_lb_listener" "test_lb_listener" {
+resource "aws_lb_listener" "https_listener" {
   load_balancer_arn = aws_lb.test.arn
-  protocol = "HTTP"
-  port = 80
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09"
+  certificate_arn   = var.acm_certificate_arn
 
   default_action {
     type = "forward"
@@ -72,12 +74,34 @@ resource "aws_lb_listener" "test_lb_listener" {
         arn    = aws_lb_target_group.tg["app-terraform"].arn
         weight = 1
       }
+      stickiness {
+        enabled  = false
+        duration = 1
+      }
+    }
+  }
+}
+
+resource "aws_lb_listener" "http_listener" {
+  load_balancer_arn = aws_lb.test.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      protocol    = "HTTPS"
+      port        = "443"
+      host        = "#{host}"
+      path        = "/#{path}"
+      query       = "#{query}"
+      status_code = "HTTP_301"
     }
   }
 }
 
 resource "aws_lb_listener_rule" "jenkins_rule" {
-  listener_arn = aws_lb_listener.test_lb_listener.arn
+  listener_arn = aws_lb_listener.https_listener.arn
   priority     = 100
 
   action {
@@ -96,7 +120,7 @@ resource "aws_lb_listener_rule" "jenkins_rule" {
     }
   }
 
-  depends_on = [ aws_lb_target_group.tg ]
+  depends_on = [aws_lb_target_group.tg]
 }
 
 # Security Group for the ALB
