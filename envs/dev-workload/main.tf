@@ -2,11 +2,11 @@ data "terraform_remote_state" "platform" {
   backend = "s3"
 
   config = {
-    bucket         = var.platform_state_bucket
-    key            = var.platform_state_key
-    region         = var.aws_region
-    dynamodb_table = var.state_lock_table
-    encrypt        = true
+    bucket       = var.platform_state_bucket
+    key          = var.platform_state_key
+    region       = var.aws_region
+    use_lockfile = true
+    encrypt      = true
   }
 }
 

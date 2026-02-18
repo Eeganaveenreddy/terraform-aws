@@ -134,7 +134,7 @@ pipeline {
             "-backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" " +
             "-backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" " +
             "-backend-config=\"region=${params.AWS_REGION}\" " +
-            "-backend-config=\"dynamodb_table=terraform-state-locks\" " +
+            "-backend-config=\"use_lockfile=true\" " +
             "-backend-config=\"encrypt=true\"",
             "terraform validate -no-color",
             "terraform plan -input=false -no-color -var-file='${params.TF_VAR_FILE}' -out=tfplan",

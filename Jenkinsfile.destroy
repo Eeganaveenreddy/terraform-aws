@@ -153,7 +153,7 @@ pipeline {
             "HOME=/home/ubuntu git reset --hard 'origin/${params.GIT_REF}' || true",
             "cd '${env.TF_WORKING_DIR}'",
             "terraform -version",
-            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"dynamodb_table=terraform-state-locks\" -backend-config=\"encrypt=true\"",
+            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"use_lockfile=true\" -backend-config=\"encrypt=true\"",
             "terraform validate -no-color",
             "terraform plan -destroy -input=false -no-color -var-file='${params.TF_VAR_FILE}' -out=tfdestroy",
             "terraform apply -input=false -no-color -auto-approve tfdestroy"
