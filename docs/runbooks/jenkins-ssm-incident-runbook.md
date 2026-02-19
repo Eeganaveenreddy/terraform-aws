@@ -298,6 +298,24 @@ Use split stacks to avoid CI self-destruction:
 
 ---
 
+## State Backup Record
+
+On February 19, 2026 (UTC), old dev state files were backed up before cleanup.
+
+- Bucket: `terraform-state-566579489861-ap-south-1`
+- Backup prefix: `terraform-aws/backups/20260219T114948Z/`
+- Backup objects:
+  - `terraform-aws/backups/20260219T114948Z/dev-platform/terraform.tfstate`
+  - `terraform-aws/backups/20260219T114948Z/dev-workload/terraform.tfstate`
+- Deleted old prefixes after backup:
+  - `terraform-aws/envs/dev-platform/`
+  - `terraform-aws/envs/dev-workload/`
+- Active state objects now:
+  - `terraform-aws/envs/uat-platform/terraform.tfstate`
+  - `terraform-aws/envs/uat-workload/terraform.tfstate`
+
+---
+
 ## Related Docs
 
 - Historical troubleshooting notes: `docs/postmortems/jenkins-ssm-github-troubleshooting-notes.md`
