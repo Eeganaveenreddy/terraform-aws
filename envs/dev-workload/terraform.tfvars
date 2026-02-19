@@ -8,12 +8,12 @@ state_lock_table      = "terraform-state-locks"
 server_config = {
   "app-terraform" = {
     ami_id           = "ami-0f480abe64df75f41"
-    instance_type    = "c5a.xlarge"
+    instance_type    = "c5a.2xlarge"
     ingress_ports    = [8069]
     server_name      = "app-terraform"
     alb_enabled      = true
     role             = "app"
-    root_volume_size = 50
+    root_volume_size = 250
   },
   "db-terraform" = {
     ami_id        = "ami-07a82f67f1dd0b930"
