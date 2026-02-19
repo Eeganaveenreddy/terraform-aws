@@ -1,8 +1,8 @@
 aws_region = "ap-south-1"
-env        = "dev"
+env        = "uat"
 
 platform_state_bucket = "terraform-state-566579489861-ap-south-1"
-platform_state_key    = "terraform-aws/envs/dev-platform/terraform.tfstate"
+platform_state_key    = "terraform-aws/envs/uat-platform/terraform.tfstate"
 state_lock_table      = "terraform-state-locks"
 
 server_config = {

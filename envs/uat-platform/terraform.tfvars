@@ -1,5 +1,5 @@
 aws_region          = "ap-south-1"
-env                 = "dev"
+env                 = "uat"
 alb_name            = "alb-terraform"
 acm_certificate_arn = "arn:aws:acm:ap-south-1:566579489861:certificate/698776da-a9fc-4ebb-a9e5-6c65986eb048"
 
@@ -13,7 +13,7 @@ server_config = {
     alb_enabled   = true
     role          = "ci"
   },
-  # Keep app target group in platform ALB; app instance lives in dev-workload.
+  # Keep app target group in platform ALB; app instance lives in workload stack.
   "app-terraform" = {
     ami_id           = "ami-0f480abe64df75f41"
     instance_type    = "c5a.xlarge"

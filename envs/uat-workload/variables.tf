@@ -9,14 +9,14 @@ variable "env" {
 }
 
 variable "platform_state_bucket" {
-  description = "S3 bucket containing dev-platform Terraform state"
+  description = "S3 bucket containing platform Terraform state"
   type        = string
 }
 
 variable "platform_state_key" {
-  description = "S3 key for dev-platform Terraform state"
+  description = "S3 key for platform Terraform state"
   type        = string
-  default     = "terraform-aws/envs/dev-platform/terraform.tfstate"
+  default     = "terraform-aws/envs/uat-platform/terraform.tfstate"
 }
 
 variable "state_lock_table" {

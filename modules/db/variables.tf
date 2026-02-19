@@ -7,7 +7,7 @@ variable "server_name" {}
 variable "ingress_ports" {}
 variable "iam_instance_profile" {}
 variable "env" {
-  description = "Environment name (dev, sit, prod)"
+  description = "Environment name (uat, sit, prod)"
   type        = string
 }
 variable "region" {
@@ -28,4 +28,3 @@ variable "role" {
     error_message = "DB module only supports role = database"
   }
 }
-

@@ -209,10 +209,10 @@ git ls-remote git@github.com:<org-or-user>/<repo>.git
 
 ### Corrective actions
 1. Switched Jenkins init to `terraform init -reconfigure ...`.
-2. Split dev stack into:
-- `envs/dev-platform`
-- `envs/dev-workload`
-3. Defaulted Jenkins `TF_WORKING_DIR` to `envs/dev-workload`.
+2. Split stack into:
+- `envs/uat-platform`
+- `envs/uat-workload`
+3. Defaulted Jenkins `TF_WORKING_DIR` to `envs/uat-workload`.
 4. Removed old monolithic `envs/dev` stack from repo to prevent accidental use.
 
 ### Preventive controls

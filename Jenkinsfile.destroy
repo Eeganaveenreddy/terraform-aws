@@ -10,7 +10,7 @@ pipeline {
   }
 
   environment {
-    TF_WORKING_DIR = 'envs/dev-workload'
+    TF_WORKING_DIR = 'envs/uat-workload'
   }
 
   parameters {
@@ -57,7 +57,7 @@ pipeline {
     string(
       name: 'TF_VAR_FILE',
       defaultValue: 'terraform.tfvars',
-      description: 'Variable file path relative to envs/dev-workload'
+      description: 'Variable file path relative to envs/uat-workload'
     )
     string(
       name: 'SSM_TIMEOUT_MINUTES',

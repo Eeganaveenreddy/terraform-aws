@@ -8,7 +8,7 @@ variable "ingress_ports" {}
 variable "alb_sg_id" {}
 variable "iam_instance_profile" {}
 variable "env" {
-  description = "Environment name (dev, sit, prod)"
+  description = "Environment name (uat, sit, prod)"
   type        = string
 }
 
@@ -31,5 +31,4 @@ variable "root_volume_size" {
   type    = number
   default = null
 }
-
 

@@ -261,19 +261,19 @@ This runbook reflects fixes already applied in:
 
 ---
 
-## Current Stack Layout (Dev)
+## Current Stack Layout (UAT)
 
 Use split stacks to avoid CI self-destruction:
 
-- Platform stack: `envs/dev-platform`
+- Platform stack: `envs/uat-platform`
   - VPC, IAM, Jenkins, terraform-runner, ALB, target groups, Jenkins TG attachment
-- Workload stack: `envs/dev-workload`
+- Workload stack: `envs/uat-workload`
   - app/db instances, app TG attachment via platform remote state
 
 ### Jenkins defaults
 
-- `TF_WORKING_DIR` defaults to `envs/dev-workload` in all Jenkinsfiles.
-- Set `TF_WORKING_DIR=envs/dev-platform` only for platform changes.
+- `TF_WORKING_DIR` defaults to `envs/uat-workload` in all Jenkinsfiles.
+- Set `TF_WORKING_DIR=envs/uat-platform` only for platform changes.
 
 ### Repo URL normalization regex note
 
