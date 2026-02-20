@@ -3,26 +3,22 @@ import groovy.json.JsonOutput
 pipeline {
   agent any
 
-  environment {
-    TF_WORKING_DIR = 'envs/uat-workload'
-    APP_NAME = "AWS-Terraform" 
-    ENVIRONMENT = "UAT" 
-    // Team recipients 
-    MAIL_TO = "enreddy619@gmail.com" 
-    DEFAULT_MAIL= "enreddy619@gmail.com" 
+  options {
+    timestamps()
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
-  options{
-      disableConcurrentBuilds(abortPrevious: true)
-      buildDiscarder(logRotator(
-          numToKeepStr: '10',
-          artifactNumToKeepStr: '3'
-      ))
-      timestamps()
-      timeout(time: 10, unit: 'MINUTES')
+  environment {
+    TF_WORKING_DIR = 'envs/uat-workload'
   }
 
   parameters {
+    booleanParam(
+      name: 'CONFIRM_APPLY',
+      defaultValue: false,
+      description: 'Must be true to run apply'
+    )
     string(
       name: 'AWS_REGION',
       defaultValue: 'ap-south-1',
@@ -71,58 +67,24 @@ pipeline {
   }
 
   stages {
-    stage('Get Triggered User'){
-        steps{
-            script{
-              /*
-              STARTTIME -> Raw epoch timestamp in milliseconds (used for duration calculation)
-              START_TIME -> Human‑readable formatted time (used for logs/emails)
-              */
-              env.STARTTIME = System.currentTimeMillis().toString()
-              env.START_TIME = new Date().format(
-                  'yyyy-MM-dd hh:mm a',
-                  TimeZone.getTimeZone('Asia/Kolkata')
-              )
-
-              // Get triggering user (modern Jenkins way)
-              wrap([$class: 'BuildUser']) {
-                  env.TRIGGERED_USER = env.BUILD_USER ?: 'SCM/Automation'
-                  env.USER_EMAIL     = env.BUILD_USER_EMAIL ?: env.DEFAULT_MAIL
-              }
-
-              echo "Triggered User: ${env.TRIGGERED_USER}"
-              echo "Deployment initiated by: ${env.TRIGGERED_USER}"
-              echo "Deployment started at: ${env.START_TIME}"
-            }
-        }
-    }
-
-    stage('Send Initialization Mail'){
-        steps{
-            script {
-                def recipients = "${env.MAIL_TO}"
-                emailext(
-                to: recipients,
-                mimeType: 'text/html',
-                subject: "Action required: approve ${env.APP_NAME} deployment to ${env.ENVIRONMENT}",
-                body: """
-                Application: ${env.APP_NAME} <br>
-                Environment: ${env.ENVIRONMENT} <br>
-                Start Time: ${env.START_TIME} <br>
-                Build Number: ${env.BUILD_NUMBER} <br>
-
-                Deployment initiated by <b>${env.TRIGGERED_USER}</b>. <br><br>
-                    Please login to Jenkins and enter deployment details to continue.
-                    <br><br>
-                    <a href="${env.BUILD_URL}input">Click here to go to the build</a>
-                """
-                )
-            }
-        }
-    }
     stage('Checkout') {
       steps {
         checkout scm
+      }
+    }
+
+    stage('Prechecks') {
+      steps {
+        script {
+          if (!params.CONFIRM_APPLY) {
+            error('Set CONFIRM_APPLY=true to continue.')
+          }
+        }
+        sh '''
+          set -eu
+          aws --version
+          aws sts get-caller-identity --output json
+        '''
       }
     }
 
@@ -153,47 +115,7 @@ pipeline {
 
     stage('Manual Approval') {
       steps {
-        script {
-          def approval = null
-          timeout(time: 30, unit: 'MINUTES') {
-            while (true) {
-              approval = input(
-                message: "Approve and enter deployment details for ${env.APP_NAME} in ${env.ENVIRONMENT}",
-                ok: 'Approve Deployment',
-                submitterParameter: 'APPROVED_BY',
-                parameters: [
-                  booleanParam(name: 'CONFIRM_APPLY', defaultValue: false, description: 'Must be checked to continue apply'),
-                  string(name: 'APPROVED_GIT_REF', defaultValue: params.GIT_REF, description: 'Git branch/tag to checkout'),
-                  string(name: 'APPROVED_TF_VAR_FILE', defaultValue: params.TF_VAR_FILE, description: 'Terraform var-file path')
-                ]
-              )
-
-              if (approval['CONFIRM_APPLY'] as Boolean) {
-                break
-              }
-
-              echo "CONFIRM_APPLY was not checked. Please check it to continue deployment."
-            }
-          }
-
-          env.APPROVED_BY = approval['APPROVED_BY'] ?: 'unknown'
-          env.EFFECTIVE_GIT_REF = approval['APPROVED_GIT_REF']?.trim() ?: params.GIT_REF
-          env.EFFECTIVE_TF_VAR_FILE = approval['APPROVED_TF_VAR_FILE']?.trim() ?: params.TF_VAR_FILE
-          env.EFFECTIVE_AWS_REGION = params.AWS_REGION
-
-          echo "Approved by: ${env.APPROVED_BY}"
-          echo "Using GIT_REF=${env.EFFECTIVE_GIT_REF}, TF_VAR_FILE=${env.EFFECTIVE_TF_VAR_FILE}, AWS_REGION=${env.EFFECTIVE_AWS_REGION}"
-        }
-      }
-    }
-
-    stage('Prechecks') {
-      steps {
-        sh '''
-          set -eu
-          aws --version
-          aws sts get-caller-identity --output json
-        '''
+        input message: "Approve remote terraform apply on ${params.SSM_TARGET_TAG_VALUE}?"
       }
     }
 
@@ -219,14 +141,14 @@ pipeline {
             "cd '${params.REMOTE_REPO_DIR}'",
             "HOME=/home/ubuntu git config --global --add safe.directory '${params.REMOTE_REPO_DIR}'",
             "HOME=/home/ubuntu GIT_SSH_COMMAND='ssh -i /home/ubuntu/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new' git fetch --all --prune",
-            "HOME=/home/ubuntu git checkout '${env.EFFECTIVE_GIT_REF}'",
-            "HOME=/home/ubuntu git reset --hard 'origin/${env.EFFECTIVE_GIT_REF}' || true",
+            "HOME=/home/ubuntu git checkout '${params.GIT_REF}'",
+            "HOME=/home/ubuntu git reset --hard 'origin/${params.GIT_REF}' || true",
             "cd '${env.TF_WORKING_DIR}'",
             "terraform -version",
             "terraform fmt -recursive",
-            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${env.EFFECTIVE_AWS_REGION}\" -backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${env.EFFECTIVE_AWS_REGION}\" -backend-config=\"use_lockfile=true\" -backend-config=\"encrypt=true\"",
+            "terraform init -input=false -no-color -reconfigure -backend-config=\"bucket=terraform-state-\$(aws sts get-caller-identity --query Account --output text)-${params.AWS_REGION}\" -backend-config=\"key=terraform-aws/${env.TF_WORKING_DIR}/terraform.tfstate\" -backend-config=\"region=${params.AWS_REGION}\" -backend-config=\"use_lockfile=true\" -backend-config=\"encrypt=true\"",
             "terraform validate -no-color",
-            "terraform plan -input=false -no-color -var-file='${env.EFFECTIVE_TF_VAR_FILE}' -out=tfplan",
+            "terraform plan -input=false -no-color -var-file='${params.TF_VAR_FILE}' -out=tfplan",
             "terraform apply -input=false -no-color -auto-approve tfplan"
           ]
 
@@ -235,7 +157,7 @@ pipeline {
           env.SSM_COMMAND_ID = sh(
             script: """
               aws ssm send-command \
-                --region '${env.EFFECTIVE_AWS_REGION}' \
+                --region '${params.AWS_REGION}' \
                 --document-name 'AWS-RunShellScript' \
                 --instance-ids '${env.TARGET_INSTANCE_ID}' \
                 --comment 'Jenkins terraform apply' \
@@ -261,7 +183,7 @@ pipeline {
               def status = sh(
                 script: """
                   aws ssm get-command-invocation \
-                    --region '${env.EFFECTIVE_AWS_REGION}' \
+                    --region '${params.AWS_REGION}' \
                     --command-id '${env.SSM_COMMAND_ID}' \
                     --instance-id '${env.TARGET_INSTANCE_ID}' \
                     --query 'Status' \
@@ -294,14 +216,14 @@ pipeline {
         set +e
         if [ -n "${SSM_COMMAND_ID:-}" ] && [ -n "${TARGET_INSTANCE_ID:-}" ]; then
           aws ssm get-command-invocation \
-            --region "${EFFECTIVE_AWS_REGION:-${AWS_REGION}}" \
+            --region "${AWS_REGION}" \
             --command-id "${SSM_COMMAND_ID}" \
             --instance-id "${TARGET_INSTANCE_ID}" \
             --query 'StandardOutputContent' \
             --output text > ssm-stdout.log || true
 
           aws ssm get-command-invocation \
-            --region "${EFFECTIVE_AWS_REGION:-${AWS_REGION}}" \
+            --region "${AWS_REGION}" \
             --command-id "${SSM_COMMAND_ID}" \
             --instance-id "${TARGET_INSTANCE_ID}" \
             --query 'StandardErrorContent' \
