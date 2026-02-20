@@ -83,7 +83,18 @@ echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.
 
 echo "=== Install Jenkins ==="
 sudo apt-get update -y
+sudo apt-cache policy jenkins || true
+sudo apt-get install -y --only-upgrade jenkins || true
 sudo apt-get install -y jenkins
+jenkins --version || true
+
+echo "=== Verify Jenkins version is not vulnerable ==="
+JENKINS_VER="$(dpkg-query -W -f='${Version}' jenkins | cut -d: -f2 | cut -d- -f1)"
+echo "Installed Jenkins version: ${JENKINS_VER}"
+if dpkg --compare-versions "$JENKINS_VER" le "2.550"; then
+  echo "ERROR: Installed Jenkins ${JENKINS_VER} is vulnerable (must be > 2.550)."
+  exit 1
+fi
 
 echo "=== Configure Jenkins systemd override ==="
 sudo mkdir -p /etc/systemd/system/jenkins.service.d
