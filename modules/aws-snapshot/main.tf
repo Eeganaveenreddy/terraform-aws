@@ -29,7 +29,6 @@ resource "aws_backup_plan" "daily_plan" {
     rule_name         = var.rule_name
     target_vault_name = aws_backup_vault.ec2_vault.name
     schedule          = var.schedule
-
     lifecycle {
       delete_after = var.delete_after_days
     }
