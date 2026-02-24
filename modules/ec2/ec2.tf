@@ -1,38 +1,41 @@
 resource "aws_instance" "instances" {
-  ami = var.ami_id
-  instance_type = var.instance_type
-  subnet_id = var.private_subnet_id
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [aws_security_group.sg.id]
 
   iam_instance_profile = var.iam_instance_profile
 
   # user_data = var.server_name == "terraform-runner" ? file("${path.module}/install_terraform.sh") : (var.server_name == "jenkins-terraform" ? file("${path.module}/install_jenkins.sh") : null)
   user_data = (
-  var.role == "terraform-runner"  ? file("${path.module}/install_terraform.sh") :
-  var.role == "ci"      ? file("${path.module}/install_jenkins.sh") :
-  null
+    var.role == "terraform-runner" ? file("${path.module}/install_terraform.sh") :
+    var.role == "ci" ? file("${path.module}/install_jenkins.sh") :
+    null
   )
 
   user_data_replace_on_change = true
 
   root_block_device {
-  volume_size = var.root_volume_size != null ? var.root_volume_size : 8
-  volume_type = "gp3"
-  delete_on_termination = true
+    volume_size           = var.root_volume_size != null ? var.root_volume_size : 8
+    volume_type           = "gp3"
+    delete_on_termination = true
   }
 
 
-  tags = {
-    Name = var.server_name
-    Environment = var.env
-    Region     = var.region
-    Role        = var.role
-  }
+  tags = merge(
+    {
+      Name        = var.server_name
+      Environment = var.env
+      Region      = var.region
+      Role        = var.role
+    },
+    var.resource_tags
+  )
 
   lifecycle {
     create_before_destroy = true # Builds the new server before killing the old one
   }
-  depends_on = [ var.private_subnet_id ]
+  depends_on = [var.private_subnet_id]
 }
 
 data "aws_subnet" "private" {
@@ -58,7 +61,6 @@ data "aws_subnet" "private" {
 #   key_name   = "${var.server_name}-key" # This makes it unique (e.g., Jenkins-Server-key)
 #   public_key = tls_private_key.key.public_key_openssh
 # }
-
 
 
 

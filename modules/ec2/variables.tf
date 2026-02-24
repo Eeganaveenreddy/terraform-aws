@@ -32,3 +32,8 @@ variable "root_volume_size" {
   default = null
 }
 
+variable "resource_tags" {
+  description = "Additional tags to apply to EC2 instances"
+  type        = map(string)
+  default     = {}
+}

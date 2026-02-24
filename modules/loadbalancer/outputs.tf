@@ -10,3 +10,7 @@ output "target_group_arns" {
 output "alb_sg_id" {
   value = aws_security_group.alb_sg.id
 }
+
+output "https_listener_arn" {
+  value = aws_lb_listener.https_listener.arn
+}

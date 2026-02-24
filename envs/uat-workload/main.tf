@@ -38,6 +38,7 @@ module "ec2" {
   alb_sg_id         = data.terraform_remote_state.platform.outputs.alb_sg_id
 
   root_volume_size = try(each.value.root_volume_size, null)
+  resource_tags    = { Backup = "Daily" }
 }
 
 module "db" {
@@ -64,6 +65,7 @@ module "db" {
 
   vpc_id            = data.terraform_remote_state.platform.outputs.vpc_id
   private_subnet_id = data.terraform_remote_state.platform.outputs.private_subnet_ids[0]
+  resource_tags     = { Backup = "Daily" }
 }
 
 resource "aws_lb_target_group_attachment" "app_attachment" {

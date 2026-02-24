@@ -2,6 +2,17 @@ aws_region          = "ap-south-1"
 env                 = "uat"
 alb_name            = "alb-terraform"
 acm_certificate_arn = "arn:aws:acm:ap-south-1:566579489861:certificate/698776da-a9fc-4ebb-a9e5-6c65986eb048"
+additional_acm_certificate_arns = [
+  "arn:aws:acm:ap-south-1:566579489861:certificate/d6d75517-38d0-414c-9c84-3ca648f08b59"
+]
+backup_vault_name          = "ec2-daily-backup-vault-uat"
+backup_role_name           = "aws-backup-service-role-uat"
+backup_plan_name           = "daily-ec2-backup-plan-uat"
+backup_selection_name      = "ec2-daily-backup-selection-uat"
+backup_schedule            = "cron(1 * * * ? *)"
+backup_retention_days      = 2
+backup_selection_tag_key   = "Backup"
+backup_selection_tag_value = "Daily"
 
 server_config = {
   "jenkins-terraform" = {

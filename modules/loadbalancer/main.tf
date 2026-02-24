@@ -14,23 +14,6 @@ resource "aws_lb" "test" {
   }
 }
 
-# resource "aws_lb_target_group" "lb_tg" {
-#   # name = "${var.alb_name}-tg"
-#   name_prefix = "t-tg-"
-#   vpc_id = var.vpc_id
-#   protocol = "HTTP"
-#   port = "80"
-
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-
-#   health_check {
-#     path = "/"
-#     port = "80"
-#   }
-# }
-
 resource "aws_lb_target_group" "tg" {
   for_each = { for k, v in var.server_config : k => v if v.alb_enabled }
 
@@ -116,37 +99,33 @@ resource "aws_lb_listener_rule" "jenkins_rule" {
   }
 
   condition {
-    path_pattern {
-      values = ["/jenkins", "/jenkins/*"]
+    host_header {
+      values = ["jenkins.esanchaya.com"]
     }
   }
 
   depends_on = [aws_lb_target_group.tg]
 }
 
-# Security Group for the ALB
-resource "aws_security_group" "alb_sg" {
-  name   = "${var.alb_name}-alb-sg"
-  vpc_id = var.vpc_id
+resource "aws_lb_listener_rule" "app_rule" {
+  listener_arn = aws_lb_listener.https_listener.arn
+  priority     = 10
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  action {
+    type = "forward"
+    forward {
+      target_group {
+        arn    = aws_lb_target_group.tg["app-terraform"].arn
+        weight = 1
+      }
+    }
   }
 
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  condition {
+    host_header {
+      values = ["awserp.esanchaya.com"]
+    }
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  depends_on = [aws_lb_target_group.tg]
 }

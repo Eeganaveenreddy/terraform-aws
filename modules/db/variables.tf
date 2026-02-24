@@ -28,3 +28,9 @@ variable "role" {
     error_message = "DB module only supports role = database"
   }
 }
+
+variable "resource_tags" {
+  description = "Additional tags to apply to DB instances"
+  type        = map(string)
+  default     = {}
+}

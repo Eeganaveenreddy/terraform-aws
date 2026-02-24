@@ -33,3 +33,56 @@ variable "acm_certificate_arn" {
   description = "ACM certificate ARN for ALB HTTPS listener"
   type        = string
 }
+variable "additional_acm_certificate_arns" {
+  description = "Additional ACM certificate ARNs for ALB HTTPS listener (SNI)"
+  type        = list(string)
+  default     = []
+}
+
+variable "backup_vault_name" {
+  description = "AWS Backup vault name for UAT backups"
+  type        = string
+  default     = "ec2-daily-backup-vault-uat"
+}
+
+variable "backup_role_name" {
+  description = "IAM role name used by AWS Backup service"
+  type        = string
+  default     = "aws-backup-service-role-uat"
+}
+
+variable "backup_plan_name" {
+  description = "AWS Backup plan name"
+  type        = string
+  default     = "daily-ec2-backup-plan-uat"
+}
+
+variable "backup_selection_name" {
+  description = "AWS Backup selection name"
+  type        = string
+  default     = "ec2-daily-backup-selection-uat"
+}
+
+variable "backup_schedule" {
+  description = "Backup schedule in cron format"
+  type        = string
+  default     = "cron(30 19 * * ? *)"
+}
+
+variable "backup_retention_days" {
+  description = "Number of days to retain backups"
+  type        = number
+  default     = 2
+}
+
+variable "backup_selection_tag_key" {
+  description = "Tag key used by backup selection"
+  type        = string
+  default     = "Backup"
+}
+
+variable "backup_selection_tag_value" {
+  description = "Tag value used by backup selection"
+  type        = string
+  default     = "Daily"
+}

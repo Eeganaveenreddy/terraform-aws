@@ -7,6 +7,19 @@ module "iam" {
   source = "../../modules/iam"
 }
 
+module "aws_snapshot" {
+  source = "../../modules/aws-snapshot"
+
+  vault_name          = var.backup_vault_name
+  backup_role_name    = var.backup_role_name
+  plan_name           = var.backup_plan_name
+  selection_name      = var.backup_selection_name
+  schedule            = var.backup_schedule
+  delete_after_days   = var.backup_retention_days
+  selection_tag_key   = var.backup_selection_tag_key
+  selection_tag_value = var.backup_selection_tag_value
+}
+
 module "ec2" {
   source = "../../modules/ec2"
 
@@ -35,6 +48,7 @@ module "ec2" {
   alb_sg_id         = module.app_alb.alb_sg_id
 
   root_volume_size = try(each.value.root_volume_size, null)
+  resource_tags    = { Backup = "Daily" }
 }
 
 module "app_alb" {
@@ -45,6 +59,13 @@ module "app_alb" {
 
   vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_ids
+}
+
+module "app_alb_ssl" {
+  source = "../../modules/alb-ssl"
+
+  https_listener_arn              = module.app_alb.https_listener_arn
+  additional_acm_certificate_arns = var.additional_acm_certificate_arns
 }
 
 resource "aws_lb_target_group_attachment" "jenkins_attachment" {
